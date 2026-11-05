@@ -28,6 +28,13 @@ exports.protect = async (req, res, next) => {
       });
     }
 
+    // Deactivated accounts lose access immediately, even with a saved token
+    if (!req.user.isActive) {
+      return res.status(401).json({
+        message: "Account is disabled",
+      });
+    }
+
     next();
   } catch (error) {
     res.status(401).json({

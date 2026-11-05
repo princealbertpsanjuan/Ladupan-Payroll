@@ -24,6 +24,17 @@ export const AuthProvider = ({ children }) => {
     return res.data.user;
   };
 
+  // Reload the account details from the server (e.g. after the admin
+  // changed the hourly rate or required time-in)
+  const refreshUser = async () => {
+    const res = await api.get("/auth/me");
+
+    localStorage.setItem("user", JSON.stringify(res.data.user));
+    setUser(res.data.user);
+
+    return res.data.user;
+  };
+
   const logout = () => {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
@@ -31,7 +42,7 @@ export const AuthProvider = ({ children }) => {
   };
 
   return (
-    <AuthContext.Provider value={{ user, login, logout }}>
+    <AuthContext.Provider value={{ user, login, logout, refreshUser }}>
       {children}
     </AuthContext.Provider>
   );

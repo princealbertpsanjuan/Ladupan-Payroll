@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import StatusBadge from "../../components/StatusBadge";
+import { formatMinutes } from "../../utils/format";
 import "../../styles/archives.css";
 
 const Archives = () => {
@@ -33,7 +35,7 @@ const Archives = () => {
   };
 
   const getEmployeeName = (employee) => {
-    if (!employee) return "Unknown";
+    if (!employee) return "Deleted employee";
 
     return `${employee.firstName || ""} ${
       employee.lastName || ""
@@ -125,7 +127,7 @@ const Archives = () => {
               <th>Time Out</th>
               <th>Total Hours</th>
               <th>Gross Pay</th>
-              <th>Late Deduction</th>
+              <th>Late</th>
               <th>Remarks</th>
               <th>Payroll Period</th>
             </tr>
@@ -153,14 +155,10 @@ const Archives = () => {
 
                   <td>{formatMoney(record.grossPay)}</td>
 
-                  <td>{formatMoney(record.lateDeduction)}</td>
+                  <td>{formatMinutes(record.lateMinutes)}</td>
 
                   <td>
-                    <span
-                      className={`status ${(record.remarks || "Incomplete").toLowerCase()}`}
-                    >
-                      {record.remarks || "Incomplete"}
-                    </span>
+                    <StatusBadge record={record} />
                   </td>
 
                   <td>

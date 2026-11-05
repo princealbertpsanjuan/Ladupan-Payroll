@@ -1,0 +1,565 @@
+/* Shared Ladupan styles for new pages and components.
+   Prefixed with "lp-" so they never clash with page-specific styles. */
+
+.lp-page {
+  width: 100%;
+}
+
+.lp-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 24px;
+}
+
+.lp-header h1 {
+  font-size: 30px;
+  color: #111;
+  margin-bottom: 6px;
+}
+
+.lp-header p {
+  color: #666;
+  font-size: 15px;
+}
+
+.lp-card {
+  background: white;
+  border-radius: 18px;
+  padding: 22px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.07);
+  margin-bottom: 22px;
+}
+
+.lp-card h2 {
+  font-size: 20px;
+  color: #111;
+  margin-bottom: 14px;
+}
+
+.lp-card-subtitle {
+  color: #666;
+  font-size: 14px;
+  margin: -8px 0 16px;
+}
+
+/* TOOLBAR (search + filters) */
+.lp-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.lp-toolbar input,
+.lp-toolbar select {
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 12px;
+  font-size: 14px;
+  background: white;
+  min-width: 160px;
+}
+
+.lp-toolbar input[type="text"] {
+  flex: 1;
+  min-width: 220px;
+}
+
+.lp-toolbar input:focus,
+.lp-toolbar select:focus {
+  outline: none;
+  border-color: #111;
+}
+
+/* BUTTONS */
+.lp-btn {
+  border: none;
+  padding: 12px 18px;
+  border-radius: 10px;
+  font-weight: bold;
+  font-size: 14px;
+  cursor: pointer;
+  transition: 0.2s;
+  background: #050505;
+  color: white;
+  white-space: nowrap;
+}
+
+.lp-btn:hover {
+  background: #2a2a2a;
+}
+
+.lp-btn:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+}
+
+.lp-btn.secondary {
+  background: white;
+  color: #111;
+  border: 1px solid #ddd;
+}
+
+.lp-btn.secondary:hover {
+  background: #f4f4f4;
+}
+
+.lp-btn.danger {
+  background: #dc2626;
+}
+
+.lp-btn.danger:hover {
+  background: #b91c1c;
+}
+
+.lp-btn.success {
+  background: #15803d;
+}
+
+.lp-btn.success:hover {
+  background: #166534;
+}
+
+.lp-btn.small {
+  padding: 8px 12px;
+  font-size: 13px;
+}
+
+.lp-btn-row {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* TABLES */
+.lp-table-wrap {
+  overflow-x: auto;
+}
+
+.lp-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.lp-table th {
+  text-align: left;
+  padding: 14px;
+  background: #fafafa;
+  color: #111;
+  font-size: 13px;
+  font-weight: 700;
+  border-bottom: 1px solid #eee;
+  white-space: nowrap;
+}
+
+.lp-table td {
+  padding: 14px;
+  border-bottom: 1px solid #eee;
+  color: #222;
+  font-size: 14px;
+  vertical-align: middle;
+}
+
+.lp-table tr:hover td {
+  background: #fafafa;
+}
+
+.lp-table input {
+  width: 110px;
+  padding: 8px 10px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.lp-table input.wide {
+  width: 160px;
+}
+
+.lp-table input:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.lp-table tfoot td {
+  font-weight: bold;
+  background: #fafafa;
+}
+
+.lp-empty {
+  text-align: center;
+  padding: 30px;
+  color: #94a3b8;
+}
+
+.lp-muted {
+  color: #777;
+  font-size: 13px;
+}
+
+.lp-nowrap {
+  white-space: nowrap;
+}
+
+/* ALERTS */
+.lp-alert {
+  padding: 14px 16px;
+  border-radius: 12px;
+  margin-bottom: 18px;
+  font-size: 14px;
+  line-height: 1.5;
+  border: 1px solid transparent;
+}
+
+.lp-alert.info {
+  background: #f4f4f4;
+  border-color: #e5e5e5;
+  color: #222;
+}
+
+.lp-alert.success {
+  background: #ecfdf3;
+  border-color: #bbf7d0;
+  color: #166534;
+}
+
+.lp-alert.warning {
+  background: #fffbeb;
+  border-color: #fde68a;
+  color: #92400e;
+}
+
+.lp-alert.error {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.lp-alert ul {
+  margin: 8px 0 0 18px;
+}
+
+.lp-alert a {
+  color: inherit;
+  font-weight: bold;
+  text-decoration: underline;
+}
+
+.lp-check {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-top: 10px;
+  font-weight: bold;
+  cursor: pointer;
+}
+
+.lp-check input {
+  width: 18px;
+  height: 18px;
+  accent-color: #050505;
+}
+
+/* STAT CARDS (real counts only) */
+.lp-stat-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  margin-bottom: 22px;
+}
+
+.lp-stat {
+  background: white;
+  border-radius: 16px;
+  padding: 18px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.07);
+  border-left: 5px solid #050505;
+}
+
+.lp-stat span {
+  display: block;
+  color: #666;
+  font-size: 13px;
+  margin-bottom: 8px;
+}
+
+.lp-stat strong {
+  font-size: 24px;
+  color: #111;
+}
+
+.lp-stat.attention {
+  border-left-color: #d97706;
+}
+
+/* TABS */
+.lp-tabs {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 18px;
+}
+
+.lp-tab {
+  border: 1px solid #ddd;
+  background: white;
+  color: #111;
+  padding: 10px 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.lp-tab.active {
+  background: #050505;
+  color: white;
+  border-color: #050505;
+}
+
+.lp-count {
+  display: inline-block;
+  min-width: 22px;
+  padding: 2px 7px;
+  margin-left: 6px;
+  border-radius: 999px;
+  background: #dc2626;
+  color: white;
+  font-size: 12px;
+  text-align: center;
+}
+
+/* BADGES */
+.status-group {
+  display: inline-flex;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.lp-badge {
+  display: inline-block;
+  padding: 5px 11px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: bold;
+  background: #e5e5e5;
+  color: #333;
+  white-space: nowrap;
+}
+
+.lp-badge.pending {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+.lp-badge.approved,
+.lp-badge.advance {
+  background: #dcfce7;
+  color: #15803d;
+}
+
+.lp-badge.rejected {
+  background: #fee2e2;
+  color: #dc2626;
+}
+
+.lp-badge.deduction {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* MODALS */
+.lp-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 16px;
+}
+
+.lp-modal {
+  background: white;
+  border-radius: 18px;
+  width: 480px;
+  max-width: 100%;
+  max-height: 92vh;
+  overflow-y: auto;
+  padding: 26px;
+}
+
+.lp-modal.wide {
+  width: 860px;
+}
+
+.lp-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.lp-modal-header h2 {
+  font-size: 22px;
+  color: #111;
+}
+
+.lp-modal-header p {
+  color: #666;
+  font-size: 14px;
+  margin-top: 4px;
+}
+
+.lp-modal-close {
+  background: none;
+  border: none;
+  font-size: 28px;
+  line-height: 1;
+  cursor: pointer;
+  color: #333;
+}
+
+.lp-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+/* FORMS */
+.lp-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.lp-form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.lp-field {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.lp-field label {
+  font-size: 14px;
+  font-weight: bold;
+  color: #222;
+}
+
+.lp-field small {
+  color: #777;
+  font-size: 12px;
+}
+
+.lp-field input,
+.lp-field select,
+.lp-field textarea {
+  padding: 12px 14px;
+  border: 1px solid #ddd;
+  border-radius: 10px;
+  font-size: 14px;
+  background: white;
+}
+
+.lp-field textarea {
+  min-height: 90px;
+  resize: vertical;
+}
+
+.lp-field input:focus,
+.lp-field select:focus,
+.lp-field textarea:focus {
+  outline: none;
+  border-color: #111;
+}
+
+.lp-field input:disabled {
+  background: #f4f4f4;
+  color: #555;
+}
+
+/* DETAILS (key/value) */
+.lp-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 12px;
+  margin-bottom: 16px;
+}
+
+.lp-details div {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 12px;
+  padding: 12px 14px;
+}
+
+.lp-details span {
+  display: block;
+  font-size: 12px;
+  color: #777;
+  margin-bottom: 5px;
+}
+
+.lp-details strong {
+  color: #111;
+  font-size: 15px;
+}
+
+/* PAGINATION */
+.lp-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-top: 16px;
+  color: #666;
+  font-size: 14px;
+  flex-wrap: wrap;
+}
+
+.lp-pre {
+  background: #fafafa;
+  border: 1px solid #eee;
+  border-radius: 10px;
+  padding: 12px;
+  font-size: 12px;
+  white-space: pre-wrap;
+  word-break: break-word;
+  max-height: 260px;
+  overflow-y: auto;
+}
+
+@media (max-width: 760px) {
+  .lp-form-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .lp-header h1 {
+    font-size: 24px;
+  }
+
+  .lp-card {
+    padding: 16px;
+  }
+}
+
+a.lp-stat {
+  display: block;
+  color: inherit;
+  transition: 0.2s;
+}
+
+a.lp-stat:hover {
+  transform: translateY(-2px);
+}

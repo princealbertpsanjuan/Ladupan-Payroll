@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 
 import Login from "./pages/auth/Login";
 
@@ -9,6 +9,9 @@ import Attendance from "./pages/admin/Attendance";
 import Payroll from "./pages/admin/Payroll";
 import Reports from "./pages/admin/Reports";
 import Archives from "./pages/admin/Archives";
+import Corrections from "./pages/admin/Corrections";
+import CashAdvances from "./pages/admin/CashAdvances";
+import AuditLog from "./pages/admin/AuditLog";
 
 // CLIENT PAGES
 import ClientDashboard from "./pages/client/ClientDashboard";
@@ -16,6 +19,11 @@ import TimeInOut from "./pages/client/TimeInOut";
 import MyRecords from "./pages/client/MyRecords";
 import MyArchives from "./pages/client/MyArchives";
 import MyAccount from "./pages/client/MyAccount";
+import MyPayslips from "./pages/client/MyPayslips";
+import MyCorrections from "./pages/client/MyCorrections";
+
+// SHARED PAGES
+import PayslipPage from "./pages/shared/PayslipPage";
 
 // ROUTES & LAYOUTS
 import ProtectedRoute from "./routes/ProtectedRoute";
@@ -100,6 +108,50 @@ function App() {
           }
         />
 
+        <Route
+          path="/admin/corrections"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminLayout>
+                <Corrections />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/cash-advances"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminLayout>
+                <CashAdvances />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/audit-log"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminLayout>
+                <AuditLog />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/admin/payslip/:reportId/:employeeId"
+          element={
+            <ProtectedRoute allowedRole="admin">
+              <AdminLayout>
+                <PayslipPage admin />
+              </AdminLayout>
+            </ProtectedRoute>
+          }
+        />
+
         {/* CLIENT ROUTES */}
         <Route
           path="/client/dashboard"
@@ -155,6 +207,42 @@ function App() {
             </ProtectedRoute>
           }
         />
+
+        <Route
+          path="/client/payslips"
+          element={
+            <ProtectedRoute allowedRole="employee">
+              <ClientLayout>
+                <MyPayslips />
+              </ClientLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/client/payslips/:reportId"
+          element={
+            <ProtectedRoute allowedRole="employee">
+              <ClientLayout>
+                <PayslipPage />
+              </ClientLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        <Route
+          path="/client/corrections"
+          element={
+            <ProtectedRoute allowedRole="employee">
+              <ClientLayout>
+                <MyCorrections />
+              </ClientLayout>
+            </ProtectedRoute>
+          }
+        />
+
+        {/* UNKNOWN PAGES */}
+        <Route path="*" element={<Navigate to="/" />} />
 
       </Routes>
     </BrowserRouter>

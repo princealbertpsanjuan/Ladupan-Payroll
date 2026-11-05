@@ -27,15 +27,41 @@ const payrollReportSchema = new mongoose.Schema(
 
         employeeName: String,
 
+        // Snapshot of the Employee ID (e.g. LDP-0001) for payslips
+        employeeCode: {
+          type: String,
+          default: "",
+        },
+
+        hourlyRate: {
+          type: Number,
+          default: 0,
+        },
+
         totalPresent: Number,
         totalLate: Number,
         totalAbsent: Number,
+
+        totalIncomplete: {
+          type: Number,
+          default: 0,
+        },
+
+        totalLateMinutes: {
+          type: Number,
+          default: 0,
+        },
 
         totalHours: Number,
 
         grossSalary: Number,
 
-        lateDeductions: Number,
+        // Kept for older reports. New payrolls do not charge a separate
+        // late deduction (lateness already reduces paid hours), so this is 0.
+        lateDeductions: {
+          type: Number,
+          default: 0,
+        },
 
         cashAdvance: {
           type: Number,
@@ -47,11 +73,26 @@ const payrollReportSchema = new mongoose.Schema(
           default: 0,
         },
 
+        otherDeductionsNote: {
+          type: String,
+          default: "",
+        },
+
         netSalary: Number,
       },
     ],
 
     totalEmployees: {
+      type: Number,
+      default: 0,
+    },
+
+    totalGross: {
+      type: Number,
+      default: 0,
+    },
+
+    totalNet: {
       type: Number,
       default: 0,
     },

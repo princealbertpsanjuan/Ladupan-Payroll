@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import { formatMinutes } from "../../utils/format";
 import "../../styles/reports.css";
 
 const Reports = () => {
@@ -85,6 +87,11 @@ const Reports = () => {
 
     return matchesSearch && matchesFilter;
   });
+
+  // Older reports (before the late rule change) may have late deductions
+  const showLateDeduction = Boolean(
+    selectedReport?.employees?.some((emp) => emp.lateDeductions > 0)
+  );
 
   return (
     <div className="reports-page">
@@ -233,6 +240,20 @@ const Reports = () => {
               </div>
 
               <div>
+                <span>Total Net Pay</span>
+
+                <strong>
+                  {formatMoney(
+                    selectedReport.totalNet ||
+                      selectedReport.employees?.reduce(
+                        (sum, emp) => sum + (emp.netSalary || 0),
+                        0
+                      )
+                  )}
+                </strong>
+              </div>
+
+              <div>
                 <span>Generated Date</span>
 
                 <strong>
@@ -252,12 +273,14 @@ const Reports = () => {
                     <th>Present</th>
                     <th>Late</th>
                     <th>Absent</th>
+                    <th>Total Late</th>
                     <th>Total Hours</th>
                     <th>Gross Salary</th>
-                    <th>Late Deduction</th>
+                    {showLateDeduction && <th>Late Deduction</th>}
                     <th>Cash Advance</th>
                     <th>Other Deductions</th>
                     <th>Net Salary</th>
+                    <th>Payslip</th>
                   </tr>
                 </thead>
 
@@ -275,6 +298,11 @@ const Reports = () => {
                             {emp.totalAbsent || 0}
                           </td>
                           <td>
+                            {formatMinutes(
+                              emp.totalLateMinutes
+                            )}
+                          </td>
+                          <td>
                             {emp.totalHours || 0}
                           </td>
                           <td>
@@ -282,11 +310,13 @@ const Reports = () => {
                               emp.grossSalary
                             )}
                           </td>
-                          <td>
-                            {formatMoney(
-                              emp.lateDeductions
-                            )}
-                          </td>
+                          {showLateDeduction && (
+                            <td>
+                              {formatMoney(
+                                emp.lateDeductions
+                              )}
+                            </td>
+                          )}
                           <td>
                             {formatMoney(
                               emp.cashAdvance
@@ -304,13 +334,21 @@ const Reports = () => {
                               )}
                             </strong>
                           </td>
+                          <td>
+                            <Link
+                              className="view-report-btn"
+                              to={`/admin/payslip/${selectedReport._id}/${emp.employee?._id || emp.employee}`}
+                            >
+                              Payslip
+                            </Link>
+                          </td>
                         </tr>
                       )
                     )
                   ) : (
                     <tr>
                       <td
-                        colSpan="10"
+                        colSpan="12"
                         className="empty-text"
                       >
                         No employee breakdown found.

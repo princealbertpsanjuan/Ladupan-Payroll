@@ -1,5 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import StatusBadge from "../../components/StatusBadge";
+import { formatMinutes } from "../../utils/format";
 import "../../styles/myarchives.css";
 
 const MyArchives = () => {
@@ -93,7 +95,7 @@ const MyArchives = () => {
               <th>Time Out</th>
               <th>Total Hours</th>
               <th>Gross Pay</th>
-              <th>Late Deduction</th>
+              <th>Late</th>
               <th>Remarks</th>
               <th>Payroll Period</th>
             </tr>
@@ -121,14 +123,10 @@ const MyArchives = () => {
 
                   <td>{formatMoney(record.grossPay)}</td>
 
-                  <td>{formatMoney(record.lateDeduction)}</td>
+                  <td>{formatMinutes(record.lateMinutes)}</td>
 
                   <td>
-                    <span
-                      className={`status ${(record.remarks || "Incomplete").toLowerCase()}`}
-                    >
-                      {record.remarks || "Incomplete"}
-                    </span>
+                    <StatusBadge record={record} />
                   </td>
 
                   <td>
