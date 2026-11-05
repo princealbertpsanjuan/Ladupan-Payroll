@@ -1,4 +1,4 @@
-import { Link, useNavigate } from "react-router-dom";
+import { NavLink, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/ladupan-logo.png";
 import "../styles/layout.css";
@@ -15,21 +15,25 @@ const AdminLayout = ({ children }) => {
   return (
     <div className="layout">
       <aside className="sidebar">
-        <img src={logo} alt="Ladupan Logo" className="sidebar-logo" />
-
-        <h2>Ladupan</h2>
-        <p>Admin Panel</p>
+        <div className="sidebar-brand">
+          <img src={logo} alt="Ladupan Logo" className="sidebar-logo" />
+          <h2>Ladupan</h2>
+          <p>Admin Panel</p>
+        </div>
 
         <nav>
-          <Link to="/admin/dashboard">Dashboard</Link>
-          <Link to="/admin/employees">Employees</Link>
-          <Link to="/admin/attendance">Attendance</Link>
-          <Link to="/admin/payroll">Payroll</Link>
-          <Link to="/admin/reports">Reports</Link>
-          <Link to="/admin/archives">Archives</Link>
+          <NavLink to="/admin/dashboard">Dashboard</NavLink>
+          <NavLink to="/admin/employees">Employees</NavLink>
+          <NavLink to="/admin/attendance">Attendance</NavLink>
+          <NavLink to="/admin/corrections">DTR Corrections</NavLink>
+          <NavLink to="/admin/payroll">Payroll</NavLink>
+          <NavLink to="/admin/cash-advances">Cash Advances</NavLink>
+          <NavLink to="/admin/reports">Reports</NavLink>
+          <NavLink to="/admin/archives">Archives</NavLink>
+          <NavLink to="/admin/audit-log">Audit Log</NavLink>
         </nav>
 
-        <button onClick={handleLogout}>Logout</button>
+        <button className="logout-btn" onClick={handleLogout}>Logout</button>
       </aside>
 
       <main className="main-content">

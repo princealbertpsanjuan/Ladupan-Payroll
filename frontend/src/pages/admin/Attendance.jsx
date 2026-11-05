@@ -1,53 +1,54 @@
 import { useEffect, useState } from "react";
-import axios from "axios";
+import { useSearchParams } from "react-router-dom";
+import api from "../../api/axios";
+import StatusBadge from "../../components/StatusBadge";
+import {
+  formatMoney,
+  formatDate,
+  formatMinutes,
+  getEmployeeName,
+  isIncompleteRecord,
+} from "../../utils/format";
 import "../../styles/attendance.css";
 
+const emptyForm = {
+  employee: "",
+  date: "",
+  timeIn: "",
+  timeOut: "",
+};
+
 const Attendance = () => {
+  const [searchParams] = useSearchParams();
+
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
+  const [loading, setLoading] = useState(false);
+
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
   const [deleteRecord, setDeleteRecord] = useState(null);
+  const [formData, setFormData] = useState(emptyForm);
+  const [formError, setFormError] = useState("");
+  const [deleteError, setDeleteError] = useState("");
+  const [message, setMessage] = useState("");
 
-  const [formData, setFormData] = useState({
-    employee: "",
-    date: "",
-    timeIn: "",
-    timeOut: "",
-  });
-
-  const token = localStorage.getItem("token");
+  const [search, setSearch] = useState("");
+  const [statusFilter, setStatusFilter] = useState(
+    searchParams.get("filter") === "incomplete" ? "Incomplete" : "All"
+  );
+  const [dateFilter, setDateFilter] = useState("");
 
   useEffect(() => {
     fetchEmployees();
     fetchAttendance();
   }, []);
 
-  const authHeader = {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  };
-
   const fetchEmployees = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/employees", authHeader);
-
-      const employeeList = Array.isArray(res.data)
-        ? res.data
-        : res.data.employees || res.data.data || [];
-
-      const activeEmployees = employeeList.filter(
-        (emp) =>
-          emp.role === "employee" &&
-          (emp.status === "Active" ||
-            emp.status === "active" ||
-            emp.isActive === true ||
-            emp.employmentStatus === "Active" ||
-            !emp.status)
-      );
-
-      setEmployees(activeEmployees);
+      const res = await api.get("/employees");
+      const employeeList = Array.isArray(res.data) ? res.data : [];
+      setEmployees(employeeList.filter((emp) => emp.isActive));
     } catch (err) {
       console.error("Error fetching employees:", err);
     }
@@ -55,46 +56,14 @@ const Attendance = () => {
 
   const fetchAttendance = async () => {
     try {
-      const res = await axios.get("http://localhost:5000/api/attendance", authHeader);
-
-      const attendanceList = Array.isArray(res.data)
-        ? res.data
-        : res.data.attendance || res.data.records || res.data.data || [];
-
-      setRecords(attendanceList);
+      setLoading(true);
+      const res = await api.get("/attendance");
+      setRecords(Array.isArray(res.data) ? res.data : []);
     } catch (err) {
       console.error("Error fetching attendance:", err);
+    } finally {
+      setLoading(false);
     }
-  };
-
-  const getEmployeeName = (employee) => {
-    if (!employee) return "Unknown Employee";
-
-    if (typeof employee === "string") {
-      const foundEmployee = employees.find((emp) => emp._id === employee);
-      if (!foundEmployee) return "Unknown Employee";
-
-      return `${foundEmployee.firstName || foundEmployee.firstname || foundEmployee.name || ""} ${
-        foundEmployee.lastName || foundEmployee.lastname || ""
-      }`.trim();
-    }
-
-    return `${employee.firstName || employee.firstname || employee.name || ""} ${
-      employee.lastName || employee.lastname || ""
-    }`.trim();
-  };
-
-  const getEmployeeId = (record) => {
-    return record.employee?._id || record.employee || "";
-  };
-
-  const getRecordDate = (date) => {
-    if (!date) return "";
-    return date.includes("T") ? date.slice(0, 10) : date;
-  };
-
-  const formatMoney = (value) => {
-    return `₱${Number(value || 0).toFixed(2)}`;
   };
 
   const handleChange = (e) => {
@@ -106,76 +75,88 @@ const Attendance = () => {
 
   const openAddModal = () => {
     setEditingRecord(null);
-    setFormData({
-      employee: "",
-      date: "",
-      timeIn: "",
-      timeOut: "",
-    });
+    setFormData(emptyForm);
+    setFormError("");
     setShowModal(true);
   };
 
   const openEditModal = (record) => {
     setEditingRecord(record);
-
     setFormData({
-      employee: getEmployeeId(record),
-      date: getRecordDate(record.date),
+      employee: record.employee?._id || record.employee || "",
+      date: formatDate(record.date),
       timeIn: record.timeIn || "",
       timeOut: record.timeOut || "",
     });
-
+    setFormError("");
     setShowModal(true);
+  };
+
+  const closeModal = () => {
+    setShowModal(false);
+    setEditingRecord(null);
+    setFormError("");
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
 
-    const selectedEmployee = employees.find((emp) => emp._id === formData.employee);
-
+    // Required time-in and hourly rate are taken from the employee's
+    // settings by the backend
     const payload = {
       employee: formData.employee,
       date: formData.date,
       timeIn: formData.timeIn,
       timeOut: formData.timeOut,
-      requiredTimeIn: selectedEmployee?.requiredTimeIn || "08:00",
-      hourlyRate: selectedEmployee?.hourlyRate || 0,
     };
 
     try {
       if (editingRecord) {
-        await axios.put(
-          `http://localhost:5000/api/attendance/${editingRecord._id}`,
-          payload,
-          authHeader
-        );
+        await api.put(`/attendance/${editingRecord._id}`, payload);
+        setMessage("Attendance record updated.");
       } else {
-        await axios.post("http://localhost:5000/api/attendance", payload, authHeader);
+        await api.post("/attendance", payload);
+        setMessage("Attendance record added.");
       }
 
-      setShowModal(false);
-      setEditingRecord(null);
+      closeModal();
       fetchAttendance();
     } catch (err) {
-      console.error("Error saving attendance:", err);
-      alert(err.response?.data?.message || "Failed to save attendance record.");
+      setFormError(err.response?.data?.message || "Failed to save attendance record.");
     }
   };
 
   const confirmDelete = async () => {
     try {
-      await axios.delete(
-        `http://localhost:5000/api/attendance/${deleteRecord._id}`,
-        authHeader
-      );
-
+      await api.delete(`/attendance/${deleteRecord._id}`);
       setDeleteRecord(null);
+      setDeleteError("");
+      setMessage("Attendance record deleted.");
       fetchAttendance();
     } catch (err) {
-      console.error("Error deleting attendance:", err);
-      alert(err.response?.data?.message || "Failed to delete attendance record.");
+      setDeleteError(err.response?.data?.message || "Failed to delete attendance record.");
     }
   };
+
+  const incompleteCount = records.filter(isIncompleteRecord).length;
+
+  const filteredRecords = records.filter((record) => {
+    const keyword = search.toLowerCase();
+    const name = getEmployeeName(record.employee).toLowerCase();
+    const code = (record.employee?.employeeId || "").toLowerCase();
+
+    const matchesSearch = !keyword || name.includes(keyword) || code.includes(keyword);
+
+    const matchesStatus =
+      statusFilter === "All" ||
+      (statusFilter === "Incomplete" && isIncompleteRecord(record)) ||
+      record.remarks === statusFilter;
+
+    const matchesDate = !dateFilter || formatDate(record.date) === dateFilter;
+
+    return matchesSearch && matchesStatus && matchesDate;
+  });
 
   return (
     <div className="attendance-page">
@@ -190,7 +171,59 @@ const Attendance = () => {
         </button>
       </div>
 
+      {incompleteCount > 0 && (
+        <div className="lp-alert warning">
+          {incompleteCount} record(s) have no time-out. Use <strong>Set Time Out</strong>{" "}
+          to complete them. Until then they count as 0 hours in payroll.{" "}
+          <button
+            className="lp-btn secondary small"
+            onClick={() => setStatusFilter("Incomplete")}
+          >
+            Show them
+          </button>
+        </div>
+      )}
+
+      {message && <div className="lp-alert success">{message}</div>}
+
       <div className="attendance-card">
+        <div className="lp-toolbar">
+          <input
+            type="text"
+            placeholder="Search by employee name or ID..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
+
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+          >
+            <option value="All">All Remarks</option>
+            <option value="Present">Present</option>
+            <option value="Late">Late</option>
+            <option value="Absent">Absent</option>
+            <option value="Incomplete">No time-out</option>
+          </select>
+
+          <input
+            type="date"
+            value={dateFilter}
+            onChange={(e) => setDateFilter(e.target.value)}
+          />
+
+          <button
+            className="lp-btn secondary"
+            onClick={() => {
+              setSearch("");
+              setStatusFilter("All");
+              setDateFilter("");
+            }}
+          >
+            Reset
+          </button>
+        </div>
+
         <table>
           <thead>
             <tr>
@@ -202,36 +235,49 @@ const Attendance = () => {
               <th>Total Hours</th>
               <th>Hourly Rate</th>
               <th>Gross Pay</th>
-              <th>Late Deduction</th>
+              <th>Late</th>
               <th>Remarks</th>
               <th>Action</th>
             </tr>
           </thead>
 
           <tbody>
-            {records.length > 0 ? (
-              records.map((record) => (
+            {loading && records.length === 0 ? (
+              <tr>
+                <td colSpan="11" className="empty-text">
+                  Loading attendance records...
+                </td>
+              </tr>
+            ) : filteredRecords.length > 0 ? (
+              filteredRecords.map((record) => (
                 <tr key={record._id}>
-                  <td>{getEmployeeName(record.employee)}</td>
-                  <td>{getRecordDate(record.date)}</td>
+                  <td>
+                    {getEmployeeName(record.employee)}
+                    <div className="lp-muted">{record.employee?.employeeId}</div>
+                  </td>
+                  <td>{formatDate(record.date)}</td>
                   <td>{record.requiredTimeIn || "-"}</td>
                   <td>{record.timeIn || "-"}</td>
                   <td>{record.timeOut || "-"}</td>
                   <td>{record.totalHours || 0}</td>
                   <td>{formatMoney(record.hourlyRate)}</td>
                   <td>{formatMoney(record.grossPay)}</td>
-                  <td>{formatMoney(record.lateDeduction)}</td>
+                  <td>{formatMinutes(record.lateMinutes)}</td>
                   <td>
-                    <span className={`status ${(record.remarks || "Incomplete").toLowerCase()}`}>
-                      {record.remarks || "Incomplete"}
-                    </span>
+                    <StatusBadge record={record} />
                   </td>
                   <td className="action-buttons">
                     <button className="edit-btn" onClick={() => openEditModal(record)}>
-                      Edit
+                      {isIncompleteRecord(record) ? "Set Time Out" : "Edit"}
                     </button>
 
-                    <button className="delete-btn" onClick={() => setDeleteRecord(record)}>
+                    <button
+                      className="delete-btn"
+                      onClick={() => {
+                        setDeleteError("");
+                        setDeleteRecord(record);
+                      }}
+                    >
                       Delete
                     </button>
                   </td>
@@ -246,6 +292,11 @@ const Attendance = () => {
             )}
           </tbody>
         </table>
+
+        <div className="attendance-footer">
+          Showing {filteredRecords.length} of {records.length} active DTR record
+          {records.length !== 1 ? "s" : ""}
+        </div>
       </div>
 
       {showModal && (
@@ -253,22 +304,28 @@ const Attendance = () => {
           <div className="modal-box">
             <h2>{editingRecord ? "Edit Attendance" : "Add Attendance"}</h2>
 
+            {formError && <div className="lp-alert error">{formError}</div>}
+
             <form onSubmit={handleSubmit}>
               <label>Employee</label>
-              <select
-                name="employee"
-                value={formData.employee}
-                onChange={handleChange}
-                required
-              >
-                <option value="">Select employee</option>
+              {editingRecord ? (
+                <input value={getEmployeeName(editingRecord.employee)} disabled />
+              ) : (
+                <select
+                  name="employee"
+                  value={formData.employee}
+                  onChange={handleChange}
+                  required
+                >
+                  <option value="">Select employee</option>
 
-                {employees.map((emp) => (
-                  <option key={emp._id} value={emp._id}>
-                    {getEmployeeName(emp)}
-                  </option>
-                ))}
-              </select>
+                  {employees.map((emp) => (
+                    <option key={emp._id} value={emp._id}>
+                      {emp.employeeId} - {getEmployeeName(emp)}
+                    </option>
+                  ))}
+                </select>
+              )}
 
               <label>Date</label>
               <input
@@ -296,15 +353,13 @@ const Attendance = () => {
                 onChange={handleChange}
               />
 
+              <p className="lp-muted">
+                Remarks, hours, and pay are calculated automatically from the
+                employee's required time-in and hourly rate.
+              </p>
+
               <div className="modal-actions">
-                <button
-                  type="button"
-                  className="cancel-btn"
-                  onClick={() => {
-                    setShowModal(false);
-                    setEditingRecord(null);
-                  }}
-                >
+                <button type="button" className="cancel-btn" onClick={closeModal}>
                   Cancel
                 </button>
 
@@ -323,9 +378,13 @@ const Attendance = () => {
             <h2>Delete Attendance?</h2>
 
             <p>
-              Are you sure you want to delete this attendance record? This action
+              Are you sure you want to delete the DTR of{" "}
+              <strong>{getEmployeeName(deleteRecord.employee)}</strong> on{" "}
+              <strong>{formatDate(deleteRecord.date)}</strong>? This action
               cannot be undone.
             </p>
+
+            {deleteError && <div className="lp-alert error">{deleteError}</div>}
 
             <div className="modal-actions">
               <button className="cancel-btn" onClick={() => setDeleteRecord(null)}>

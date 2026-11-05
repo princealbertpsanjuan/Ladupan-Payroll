@@ -1,35 +1,36 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import StatusBadge from "../../components/StatusBadge";
+import { formatMoney, formatMinutes } from "../../utils/format";
 import "../../styles/timeinout.css";
 
 const TimeInOut = () => {
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState({ type: "", text: "" });
   const [attendance, setAttendance] = useState(null);
+  const [serverDate, setServerDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [checking, setChecking] = useState(true);
+  const [now, setNow] = useState(new Date());
 
   useEffect(() => {
     fetchTodayAttendance();
+
+    const timer = setInterval(() => setNow(new Date()), 1000);
+    return () => clearInterval(timer);
   }, []);
 
+  // "Today" is decided by the server in Philippine time,
+  // so the record always matches the correct date
   const fetchTodayAttendance = async () => {
     try {
-      const res = await api.get("/attendance/my-records");
-
-      const records = Array.isArray(res.data)
-        ? res.data
-        : res.data.records || [];
-
-      const today = new Date().toISOString().split("T")[0];
-
-      const todayRecord = records.find(
-        (record) => record.date === today
-      );
-
-      if (todayRecord) {
-        setAttendance(todayRecord);
-      }
+      setChecking(true);
+      const res = await api.get("/attendance/today");
+      setAttendance(res.data.attendance);
+      setServerDate(res.data.date);
     } catch (error) {
       console.error("Error fetching attendance:", error);
+    } finally {
+      setChecking(false);
     }
   };
 
@@ -39,12 +40,13 @@ const TimeInOut = () => {
 
       const res = await api.post("/attendance/time-in");
 
-      setMessage(res.data.message);
+      setMessage({ type: "success", text: res.data.message });
       setAttendance(res.data.attendance);
     } catch (err) {
-      setMessage(
-        err.response?.data?.message || "Time in failed"
-      );
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Time in failed",
+      });
     } finally {
       setLoading(false);
     }
@@ -54,28 +56,36 @@ const TimeInOut = () => {
     try {
       setLoading(true);
 
-      const res = await api.post("/attendance/time-out");
+      const res = await api.put("/attendance/time-out");
 
-      setMessage(res.data.message);
+      setMessage({ type: "success", text: res.data.message });
       setAttendance(res.data.attendance);
     } catch (err) {
-      setMessage(
-        err.response?.data?.message || "Time out failed"
-      );
+      setMessage({
+        type: "error",
+        text: err.response?.data?.message || "Time out failed",
+      });
     } finally {
       setLoading(false);
     }
   };
 
-  const formatMoney = (value) => {
-    return `₱${Number(value || 0).toFixed(2)}`;
-  };
+  const hasTimedIn = Boolean(attendance?.timeIn);
+  const hasTimedOut = Boolean(attendance?.timeOut);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
     year: "numeric",
     month: "long",
     day: "numeric",
+    timeZone: "Asia/Manila",
+  });
+
+  const clock = now.toLocaleTimeString("en-US", {
+    hour: "numeric",
+    minute: "2-digit",
+    second: "2-digit",
+    timeZone: "Asia/Manila",
   });
 
   return (
@@ -86,7 +96,9 @@ const TimeInOut = () => {
           <p>Manage your daily attendance records.</p>
         </div>
 
-        <span>{today}</span>
+        <span>
+          {today} · {clock}
+        </span>
       </div>
 
       <div className="time-card">
@@ -94,83 +106,73 @@ const TimeInOut = () => {
           <button
             className="time-in-btn"
             onClick={handleTimeIn}
-            disabled={loading}
+            disabled={loading || checking || hasTimedIn}
           >
-            {loading ? "Processing..." : "Time In"}
+            {loading && !hasTimedIn ? "Processing..." : hasTimedIn ? "Timed In ✓" : "Time In"}
           </button>
 
           <button
             className="time-out-btn"
             onClick={handleTimeOut}
-            disabled={loading}
+            disabled={loading || checking || !hasTimedIn || hasTimedOut}
           >
-            {loading ? "Processing..." : "Time Out"}
+            {loading && hasTimedIn ? "Processing..." : hasTimedOut ? "Timed Out ✓" : "Time Out"}
           </button>
         </div>
 
-        {message && (
-          <div className="attendance-message">
-            {message}
+        {message.text && (
+          <div className={`attendance-message lp-alert ${message.type}`}>
+            {message.text}
+          </div>
+        )}
+
+        {!checking && hasTimedIn && hasTimedOut && !message.text && (
+          <div className="attendance-message lp-alert info">
+            Your attendance for today is complete. If something is wrong,
+            send a DTR correction request from My Records.
           </div>
         )}
 
         <div className="attendance-info-grid">
           <div className="attendance-info-card">
             <span>Date</span>
-            <strong>
-              {attendance?.date || "No record"}
-            </strong>
+            <strong>{attendance?.date || serverDate || "No record"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Time In</span>
-            <strong>
-              {attendance?.timeIn || "Not yet"}
-            </strong>
+            <strong>{attendance?.timeIn || "Not yet"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Time Out</span>
-            <strong>
-              {attendance?.timeOut || "Not yet"}
-            </strong>
+            <strong>{attendance?.timeOut || "Not yet"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Required Time In</span>
-            <strong>
-              {attendance?.requiredTimeIn || "-"}
-            </strong>
+            <strong>{attendance?.requiredTimeIn || "-"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Total Hours</span>
-            <strong>
-              {attendance?.totalHours || 0}
-            </strong>
+            <strong>{attendance?.totalHours || 0}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Gross Pay</span>
-            <strong>
-              {formatMoney(attendance?.grossPay)}
-            </strong>
+            <strong>{formatMoney(attendance?.grossPay)}</strong>
           </div>
 
           <div className="attendance-info-card">
-            <span>Late Deduction</span>
-            <strong>
-              {formatMoney(attendance?.lateDeduction)}
-            </strong>
+            <span>Late</span>
+            <strong>{formatMinutes(attendance?.lateMinutes)}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Remarks</span>
-
-            <strong
-              className={`status ${(attendance?.remarks || "Incomplete").toLowerCase()}`}
-            >
-              {attendance?.remarks || "Incomplete"}
+            <strong>
+              {attendance ? <StatusBadge record={attendance} /> : "No record yet"}
             </strong>
           </div>
         </div>

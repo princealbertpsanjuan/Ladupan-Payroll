@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
+import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import StatusBadge from "../../components/StatusBadge";
+import { formatMinutes, isIncompleteRecord } from "../../utils/format";
 import "../../styles/myrecords.css";
 
 const MyRecords = () => {
@@ -47,7 +50,9 @@ const MyRecords = () => {
       record.remarks?.toLowerCase().includes(search.toLowerCase());
 
     const matchesFilter =
-      filter === "All" || record.remarks === filter;
+      filter === "All" ||
+      (filter === "Incomplete" && isIncompleteRecord(record)) ||
+      record.remarks === filter;
 
     return matchesSearch && matchesFilter;
   });
@@ -81,7 +86,12 @@ const MyRecords = () => {
             <option value="Present">Present</option>
             <option value="Late">Late</option>
             <option value="Absent">Absent</option>
+            <option value="Incomplete">No time-out</option>
           </select>
+
+          <Link to="/client/corrections" className="lp-btn secondary">
+            Request Correction
+          </Link>
         </div>
 
         <table>
@@ -93,15 +103,16 @@ const MyRecords = () => {
               <th>Time Out</th>
               <th>Total Hours</th>
               <th>Gross Pay</th>
-              <th>Late Deduction</th>
+              <th>Late</th>
               <th>Remarks</th>
+              <th>Action</th>
             </tr>
           </thead>
 
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan="8" className="empty-text">
+                <td colSpan="9" className="empty-text">
                   Loading records...
                 </td>
               </tr>
@@ -120,20 +131,25 @@ const MyRecords = () => {
 
                   <td>{formatMoney(record.grossPay)}</td>
 
-                  <td>{formatMoney(record.lateDeduction)}</td>
+                  <td>{formatMinutes(record.lateMinutes)}</td>
 
                   <td>
-                    <span
-                      className={`status ${(record.remarks || "Incomplete").toLowerCase()}`}
+                    <StatusBadge record={record} />
+                  </td>
+
+                  <td>
+                    <Link
+                      className="lp-btn secondary small"
+                      to={`/client/corrections?date=${formatDate(record.date)}`}
                     >
-                      {record.remarks || "Incomplete"}
-                    </span>
+                      Request Correction
+                    </Link>
                   </td>
                 </tr>
               ))
             ) : (
               <tr>
-                <td colSpan="8" className="empty-text">
+                <td colSpan="9" className="empty-text">
                   No attendance records found.
                 </td>
               </tr>

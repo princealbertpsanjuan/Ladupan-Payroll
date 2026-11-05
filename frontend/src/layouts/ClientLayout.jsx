@@ -25,6 +25,8 @@ const ClientLayout = ({ children }) => {
           <NavLink to="/client/dashboard">Dashboard</NavLink>
           <NavLink to="/client/time">Time In / Out</NavLink>
           <NavLink to="/client/records">My Records</NavLink>
+          <NavLink to="/client/corrections">DTR Corrections</NavLink>
+          <NavLink to="/client/payslips">My Payslips</NavLink>
           <NavLink to="/client/archives">My Archives</NavLink>
           <NavLink to="/client/account">My Account</NavLink>
         </nav>
