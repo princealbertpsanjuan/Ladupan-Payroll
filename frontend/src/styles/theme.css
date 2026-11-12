@@ -1739,3 +1739,26 @@ tbody tr.group-row {
   text-underline-offset: 2px;
   cursor: pointer;
 }
+
+/* Per-day schedule change */
+.lp-field-note {
+  margin: -4px 0 10px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.lp-field-note.is-changed {
+  color: var(--warning);
+}
+
+.adjusted-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}

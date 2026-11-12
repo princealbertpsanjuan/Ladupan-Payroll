@@ -21,11 +21,20 @@ import "../../styles/attendance.css";
 const emptyForm = {
   employee: "",
   date: "",
+  requiredTimeIn: "",
   timeIn: "",
   timeOut: "",
 };
 
 const VIEW_STORAGE_KEY = "lp-attendance-view";
+
+// The required time-in of this day differs from the employee's default
+const isAdjusted = (record) =>
+  Boolean(
+    record.requiredTimeIn &&
+      record.employee?.requiredTimeIn &&
+      record.requiredTimeIn !== record.employee.requiredTimeIn
+  );
 
 const getInitials = (employee) =>
   `${employee?.firstName?.[0] || ""}${employee?.lastName?.[0] || ""}`.toUpperCase() || "?";
@@ -102,9 +111,23 @@ const Attendance = () => {
   };
 
   const handleChange = (e) => {
+    const { name, value } = e.target;
+
+    // Choosing an employee fills in their default required time-in
+    if (name === "employee") {
+      const employee = employees.find((emp) => emp._id === value);
+
+      setFormData({
+        ...formData,
+        employee: value,
+        requiredTimeIn: employee?.requiredTimeIn || formData.requiredTimeIn,
+      });
+      return;
+    }
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
     });
   };
 
@@ -120,6 +143,7 @@ const Attendance = () => {
     setFormData({
       employee: record.employee?._id || record.employee || "",
       date: formatDate(record.date),
+      requiredTimeIn: record.requiredTimeIn || record.employee?.requiredTimeIn || "",
       timeIn: record.timeIn || "",
       timeOut: record.timeOut || "",
     });
@@ -137,11 +161,12 @@ const Attendance = () => {
     e.preventDefault();
     setFormError("");
 
-    // Required time-in and hourly rate are taken from the employee's
-    // settings by the backend
+    // Hourly rate comes from the employee's settings. The required time-in
+    // can be changed for this day only (the employee's default stays).
     const payload = {
       employee: formData.employee,
       date: formData.date,
+      requiredTimeIn: formData.requiredTimeIn,
       timeIn: formData.timeIn,
       timeOut: formData.timeOut,
     };
@@ -266,6 +291,12 @@ const Attendance = () => {
     `${viewMode}-${sort.key}-${sort.direction}-${search}-${statusFilter}-${dateFilter}-${collapsedGroups.join(",")}`
   );
 
+  // Default schedule of the employee in the add/edit form
+  const formEmployee = editingRecord
+    ? editingRecord.employee
+    : employees.find((emp) => emp._id === formData.employee);
+  const defaultTimeIn = formEmployee?.requiredTimeIn || "";
+
   const renderRecordRow = (record, showEmployee) => (
     <tr key={record._id} data-key={record._id}>
       {showEmployee && (
@@ -277,7 +308,14 @@ const Attendance = () => {
       <td>{formatDate(record.date)}</td>
       <td>
         {record.timeIn || "-"}
-        <div className="lp-muted">Required {record.requiredTimeIn || "-"}</div>
+        <div className="lp-muted">
+          Required {record.requiredTimeIn || "-"}
+          {isAdjusted(record) && (
+            <span className="adjusted-tag" title={`Default schedule: ${record.employee.requiredTimeIn}`}>
+              adjusted
+            </span>
+          )}
+        </div>
       </td>
       <td>{record.timeOut || "-"}</td>
       <td>{record.totalHours || 0}</td>
@@ -546,6 +584,26 @@ const Attendance = () => {
                 required
               />
 
+              <label>Required Time In (this day)</label>
+              <input
+                type="time"
+                name="requiredTimeIn"
+                value={formData.requiredTimeIn}
+                onChange={handleChange}
+                required
+              />
+              {defaultTimeIn && formData.requiredTimeIn && formData.requiredTimeIn !== defaultTimeIn ? (
+                <p className="lp-field-note is-changed">
+                  Different from the default schedule ({defaultTimeIn}). Applies to this day only.
+                </p>
+              ) : (
+                defaultTimeIn && (
+                  <p className="lp-field-note">
+                    Default schedule: {defaultTimeIn}. Change it only if this day's schedule was different.
+                  </p>
+                )
+              )}
+
               <label>Time In</label>
               <input
                 type="time"
@@ -565,7 +623,7 @@ const Attendance = () => {
 
               <p className="lp-muted">
                 Remarks, hours, and pay are calculated automatically from the
-                employee's required time-in and hourly rate.
+                required time-in above and the employee's hourly rate.
               </p>
 
               <div className="modal-actions">

@@ -72,6 +72,12 @@ the admin in **Employee Management**.
 | Late    | After required time, less than 90 minutes late    |
 | Absent  | 90 minutes late or more → 0 hours, ₱0 gross pay   |
 
+- **Schedule changes for one day:** when an employee's required time-in is
+  different on a particular day, the admin edits that day's DTR in Attendance
+  Management and sets **Required Time In (this day)**. Remarks, hours, and pay
+  recalculate for that day only; the employee's default schedule in Employee
+  Management stays the same. Such days are tagged "adjusted", and the change is
+  written to the Audit Log.
 - **Paid hours count from the actual time-in to time-out.** Lateness already
   reduces paid hours, so no separate late deduction is charged. Late minutes are
   still recorded and shown.

@@ -14,6 +14,7 @@ const { logAudit, fullName } = require("../utils/auditLogger");
 
 const snapshot = (record) => ({
   date: record.date,
+  requiredTimeIn: record.requiredTimeIn,
   timeIn: record.timeIn,
   timeOut: record.timeOut,
   totalHours: record.totalHours,
@@ -224,7 +225,7 @@ exports.getAllAttendance = async (req, res) => {
 // current settings, not from the request.
 exports.createAttendance = async (req, res) => {
   try {
-    const { employee: employeeId, date, timeIn, timeOut } = req.body;
+    const { employee: employeeId, date, timeIn, timeOut, requiredTimeIn } = req.body;
 
     const employee = await User.findById(employeeId);
 
@@ -252,6 +253,12 @@ exports.createAttendance = async (req, res) => {
       return res.status(400).json({ message: timeError });
     }
 
+    if (requiredTimeIn && !isValidTime(requiredTimeIn)) {
+      return res.status(400).json({
+        message: "Required time in must be a valid time (HH:mm)",
+      });
+    }
+
     const existing = await Attendance.findOne({
       employee: employee._id,
       date,
@@ -265,10 +272,12 @@ exports.createAttendance = async (req, res) => {
       });
     }
 
+    // The employee's default schedule unless the admin set a different
+    // required time-in for this day
     const attendance = new Attendance({
       employee: employee._id,
       date,
-      requiredTimeIn: employee.requiredTimeIn,
+      requiredTimeIn: requiredTimeIn || employee.requiredTimeIn,
       timeIn,
       timeOut: timeOut || null,
       hourlyRate: employee.hourlyRate,
@@ -331,9 +340,16 @@ exports.updateAttendance = async (req, res) => {
 
     const before = snapshot(attendance);
 
-    const { date, timeIn, timeOut } = req.body;
+    const { date, timeIn, timeOut, requiredTimeIn } = req.body;
 
     const nextDate = date || attendance.date;
+    const nextRequiredTimeIn = requiredTimeIn || attendance.requiredTimeIn;
+
+    if (!isValidTime(nextRequiredTimeIn)) {
+      return res.status(400).json({
+        message: "Required time in must be a valid time (HH:mm)",
+      });
+    }
     const nextTimeIn = timeIn || attendance.timeIn;
     const nextTimeOut =
       timeOut === undefined ? attendance.timeOut : timeOut || null;
@@ -370,6 +386,9 @@ exports.updateAttendance = async (req, res) => {
       }
     }
 
+    // Changing the required time-in affects this day only; the employee's
+    // default schedule in Employee Management stays the same
+    attendance.requiredTimeIn = nextRequiredTimeIn;
     attendance.date = nextDate;
     attendance.timeIn = nextTimeIn;
     attendance.timeOut = nextTimeOut;
@@ -381,7 +400,10 @@ exports.updateAttendance = async (req, res) => {
       action: "ATTENDANCE_UPDATED",
       entityType: "Attendance",
       entityId: attendance._id,
-      description: `Edited DTR of ${fullName(attendance.employee)} on ${attendance.date}`,
+      description:
+        before.requiredTimeIn !== attendance.requiredTimeIn
+          ? `Edited DTR of ${fullName(attendance.employee)} on ${attendance.date} (required time-in ${before.requiredTimeIn} → ${attendance.requiredTimeIn})`
+          : `Edited DTR of ${fullName(attendance.employee)} on ${attendance.date}`,
       details: { before, after: snapshot(attendance) },
     });
 
