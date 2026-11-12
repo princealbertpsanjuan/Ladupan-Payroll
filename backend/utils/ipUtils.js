@@ -40,7 +40,57 @@ const ipv4ToNumber = (ip) => {
 
 const isValidIpv4 = (ip) => ipv4ToNumber(ip) !== null;
 
-const isValidIpv6 = (ip) => /^[0-9a-f:]+$/i.test(ip) && ip.includes(":") && ip.length <= 39;
+// Expand an IPv6 address to 8 numbers (handles "::"). null if invalid.
+const ipv6ToGroups = (ip) => {
+  const value = String(ip).toLowerCase().split("%")[0];
+  if (!/^[0-9a-f:]+$/.test(value) || !value.includes(":")) return null;
+
+  const halves = value.split("::");
+  if (halves.length > 2) return null;
+
+  const head = halves[0] ? halves[0].split(":") : [];
+  const tail = halves.length === 2 && halves[1] ? halves[1].split(":") : [];
+  const missing = 8 - head.length - tail.length;
+
+  if (halves.length === 1 && head.length !== 8) return null;
+  if (halves.length === 2 && missing < 1) return null;
+
+  const groups = [...head, ...Array(halves.length === 2 ? missing : 0).fill("0"), ...tail];
+  if (groups.length !== 8 || groups.some((g) => !/^[0-9a-f]{1,4}$/.test(g))) return null;
+
+  return groups.map((g) => parseInt(g, 16));
+};
+
+const isValidIpv6 = (ip) => ipv6ToGroups(ip) !== null;
+
+// Same first `prefix` bits?
+const ipv6InRange = (ip, base, prefix) => {
+  const a = ipv6ToGroups(ip);
+  const b = ipv6ToGroups(base);
+  if (!a || !b) return false;
+
+  for (let bit = 0; bit < prefix; bit += 16) {
+    const index = bit / 16;
+    const bits = Math.min(16, prefix - bit);
+    const mask = (0xffff << (16 - bits)) & 0xffff;
+    if ((a[index] & mask) !== (b[index] & mask)) return false;
+  }
+
+  return true;
+};
+
+// The network to save for a device's address:
+// - IPv4: the exact address (the shop's public IP, or a local address)
+// - IPv6: the /64 network, because devices use temporary IPv6 addresses
+//   that change daily, but they share the shop's /64 prefix
+const suggestNetworkFor = (ip) => {
+  const address = normalizeIp(ip);
+  const groups = ipv6ToGroups(address);
+  if (!groups || address.includes(".")) return address;
+
+  const prefix = groups.slice(0, 4).map((g) => g.toString(16)).join(":");
+  return `${prefix}::/64`;
+};
 
 // Accepts "203.0.113.5", "192.168.1.0/24", or an IPv6 address
 const isValidNetwork = (value) => {
@@ -50,7 +100,10 @@ const isValidNetwork = (value) => {
   if (input.includes("/")) {
     const [base, bits] = input.split("/");
     const prefix = Number(bits);
-    return isValidIpv4(base) && /^\d{1,2}$/.test(bits) && prefix >= 8 && prefix <= 32;
+    if (!/^\d{1,3}$/.test(bits)) return false;
+    if (isValidIpv4(base)) return prefix >= 8 && prefix <= 32;
+    if (isValidIpv6(base)) return prefix >= 32 && prefix <= 128;
+    return false;
   }
 
   return isValidIpv4(input) || isValidIpv6(input);
@@ -67,6 +120,11 @@ const ipMatches = (ip, network) => {
 
   const [base, bits] = rule.split("/");
   const prefix = Number(bits);
+
+  if (isValidIpv6(base)) {
+    return ipv6InRange(address, base, prefix);
+  }
+
   const addressNumber = ipv4ToNumber(address);
   const baseNumber = ipv4ToNumber(base);
 
@@ -85,4 +143,5 @@ module.exports = {
   isValidNetwork,
   ipMatches,
   isAllowedIp,
+  suggestNetworkFor,
 };

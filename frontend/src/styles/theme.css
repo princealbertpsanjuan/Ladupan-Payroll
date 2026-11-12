@@ -1966,3 +1966,7 @@ tbody tr.group-row {
   font-size: 13px;
   font-weight: 600;
 }
+
+.lp-badge.no-caps {
+  text-transform: none;
+}

@@ -1,6 +1,12 @@
 const Setting = require("../models/Setting");
 const AuditLog = require("../models/AuditLog");
-const { getClientIp, isAllowedIp, isValidNetwork, normalizeIp } = require("../utils/ipUtils");
+const {
+  getClientIp,
+  isAllowedIp,
+  isValidNetwork,
+  normalizeIp,
+  suggestNetworkFor,
+} = require("../utils/ipUtils");
 const { logAudit } = require("../utils/auditLogger");
 
 const toResponse = (settings, req) => {
@@ -11,6 +17,8 @@ const toResponse = (settings, req) => {
     allowedNetworks: settings.allowedNetworks,
     currentIp,
     currentIpAllowed: isAllowedIp(currentIp, settings.allowedNetworks),
+    // What "Add this network" saves (IPv6 devices get their /64 network)
+    suggestedNetwork: currentIp ? suggestNetworkFor(currentIp) : "",
   };
 };
 
@@ -72,7 +80,8 @@ exports.addNetwork = async (req, res) => {
 
     if (!isValidNetwork(address)) {
       return res.status(400).json({
-        message: "Enter a valid IP address (e.g. 203.0.113.5) or range (e.g. 192.168.1.0/24).",
+        message:
+          "Enter a valid IP address (e.g. 203.0.113.5) or range (e.g. 192.168.1.0/24 or 2001:db8:1:2::/64).",
       });
     }
 

@@ -118,6 +118,11 @@ notification (at most one per employee every 15 minutes).
 - If the backend runs **on a shop computer**, employees reach it through the
   shop's local network, so add the local range instead, e.g. `192.168.1.0/24`
   (the "Add this network" button shows the address the server sees).
+- **More than one shop:** add each shop's network (do "Add this network" once
+  at each shop, and give each a name like "Main branch").
+- **IPv6:** many providers (e.g. PLDT) also give IPv6 addresses, and devices
+  use temporary IPv6 addresses that change daily. "Add this network" saves the
+  shop's whole IPv6 network (`/64`) so every device at the shop is covered.
 - If the backend is **hosted online**, the shop's public IP is what counts.
   Most providers can change it (for example after a router restart). If
   employees suddenly can't time in at the shop, add the network again.

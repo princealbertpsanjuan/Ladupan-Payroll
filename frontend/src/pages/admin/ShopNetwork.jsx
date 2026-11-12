@@ -13,7 +13,7 @@ const ShopNetwork = () => {
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [busy, setBusy] = useState("");
-  const [currentLabel, setCurrentLabel] = useState("Shop Wi-Fi");
+  const [currentLabel, setCurrentLabel] = useState("");
   const [manual, setManual] = useState({ address: "", label: "" });
   const [manualError, setManualError] = useState("");
 
@@ -146,18 +146,21 @@ const ShopNetwork = () => {
             <div className="lp-card">
               <h2>Your current connection</h2>
               <p className="lp-card-subtitle">
-                Open this page on a device connected to the shop Wi-Fi, then add
-                this network.
+                Open this page on a device connected to a shop's Wi-Fi, then add
+                that network. Have more than one shop? Do this once at each shop.
               </p>
 
               <div className="current-network">
                 <div>
                   <span className="lp-muted">Connected from</span>
                   <strong className="current-ip">{data.currentIp || "Unknown"}</strong>
+                  {data.suggestedNetwork && data.suggestedNetwork !== data.currentIp && (
+                    <span className="lp-muted">network {data.suggestedNetwork}</span>
+                  )}
                   {data.currentIpAllowed ? (
-                    <span className="lp-badge approved">Allowed</span>
+                    <span className="lp-badge approved no-caps">Allowed</span>
                   ) : (
-                    <span className="lp-badge pending">Not in the allowed list</span>
+                    <span className="lp-badge pending no-caps">Not in the allowed list</span>
                   )}
                 </div>
 
@@ -167,13 +170,15 @@ const ShopNetwork = () => {
                       type="text"
                       value={currentLabel}
                       onChange={(e) => setCurrentLabel(e.target.value)}
-                      placeholder="Label, e.g. Shop Wi-Fi"
+                      placeholder="Shop name, e.g. Main branch"
                       aria-label="Label for this network"
                     />
                     <button
                       type="button"
                       className="lp-btn"
-                      onClick={() => addNetwork(data.currentIp, currentLabel, "current")}
+                      onClick={() =>
+                        addNetwork(data.suggestedNetwork || data.currentIp, currentLabel || "Shop Wi-Fi", "current")
+                      }
                       disabled={busy === "current"}
                       aria-busy={busy === "current"}
                     >
@@ -204,8 +209,10 @@ const ShopNetwork = () => {
                         <tr key={network._id}>
                           <td>
                             <strong>{network.address}</strong>
-                            {network.address === data.currentIp && (
-                              <span className="lp-muted"> · this device</span>
+                            {data.currentIpAllowed &&
+                              (network.address === data.currentIp ||
+                                network.address === data.suggestedNetwork) && (
+                              <span className="lp-muted"> · you're here</span>
                             )}
                           </td>
                           <td>{network.label || "-"}</td>
@@ -251,7 +258,7 @@ const ShopNetwork = () => {
                     <label>IP address or range</label>
                     <input
                       type="text"
-                      placeholder="e.g. 203.0.113.5 or 192.168.1.0/24"
+                      placeholder="e.g. 203.0.113.5, 192.168.1.0/24, 2001:db8:1:2::/64"
                       value={manual.address}
                       onChange={(e) => setManual({ ...manual, address: e.target.value })}
                       required
@@ -262,7 +269,7 @@ const ShopNetwork = () => {
                     <label>Label</label>
                     <input
                       type="text"
-                      placeholder="e.g. Shop Wi-Fi"
+                      placeholder="e.g. Second branch"
                       value={manual.label}
                       onChange={(e) => setManual({ ...manual, label: e.target.value })}
                     />
