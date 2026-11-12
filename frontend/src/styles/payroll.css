@@ -89,7 +89,7 @@
   gap: 12px;
   align-items: flex-start;
   cursor: pointer;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .employee-check-card:hover {

@@ -3,10 +3,11 @@ import api from "../../api/axios";
 import StatusBadge from "../../components/StatusBadge";
 import { formatMinutes } from "../../utils/format";
 import "../../styles/archives.css";
+import { SkeletonRows } from "../../components/Skeleton";
 
 const Archives = () => {
   const [records, setRecords] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
@@ -135,11 +136,7 @@ const Archives = () => {
 
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan="9" className="empty-text">
-                  Loading archived records...
-                </td>
-              </tr>
+              <SkeletonRows rows={6} cols={9} />
             ) : filteredRecords.length > 0 ? (
               filteredRecords.map((record) => (
                 <tr key={record._id}>

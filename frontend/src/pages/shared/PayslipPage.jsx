@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/axios";
+import { SkeletonBlock } from "../../components/Skeleton";
 import logo from "../../assets/ladupan-logo.png";
 import {
   formatMoney,
@@ -43,7 +44,31 @@ const PayslipPage = ({ admin = false }) => {
   }, [admin, reportId, employeeId]);
 
   if (loading) {
-    return <div className="lp-card lp-empty">Loading payslip...</div>;
+    return (
+      <div className="lp-page" aria-busy="true">
+        <div className="lp-header">
+          <div>
+            <h1>Payslip</h1>
+            <p>Preparing your payslip…</p>
+          </div>
+        </div>
+
+        <div className="payslip-sheet payslip-skeleton">
+          <SkeletonBlock lines={2} />
+          <div className="payslip-skeleton-grid">
+            <SkeletonBlock lines={2} />
+            <SkeletonBlock lines={2} />
+            <SkeletonBlock lines={2} />
+            <SkeletonBlock lines={2} />
+          </div>
+          <div className="payslip-skeleton-grid two">
+            <SkeletonBlock lines={5} />
+            <SkeletonBlock lines={5} />
+          </div>
+          <SkeletonBlock lines={6} />
+        </div>
+      </div>
+    );
   }
 
   if (error || !payslip) {

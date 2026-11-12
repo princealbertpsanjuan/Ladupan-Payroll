@@ -1,0 +1,462 @@
+/* ==========================================================================
+   LADUPAN MOTION SYSTEM
+   Calm, subtle, professional. Three durations, three easings.
+   Only transform and opacity are animated.
+
+   Durations
+     --dur-micro     150ms   hovers, presses, toggles, small fades
+     --dur-standard  250ms   modals, drawers, toasts, sidebar, rows
+     --dur-page      400ms   route changes, count-up, payslip preview
+
+   Easings
+     --ease-standard  cubic-bezier(0.2, 0, 0, 1)      moves on screen (both ends eased)
+     --ease-out       cubic-bezier(0.16, 1, 0.3, 1)   entrances (decelerate, settles softly)
+     --ease-in        cubic-bezier(0.4, 0, 1, 1)      exits (accelerate away)
+
+   The same values live in src/utils/motion.js for JS-driven animation.
+   ========================================================================== */
+
+:root {
+  --dur-micro: 150ms;
+  --dur-standard: 250ms;
+  --dur-page: 400ms;
+
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-in: cubic-bezier(0.4, 0, 1, 1);
+
+  /* Stagger step for lists of cards / rows */
+  --stagger-step: 40ms;
+
+  /* Distances: small on purpose */
+  --rise-sm: 4px;
+  --rise-md: 8px;
+}
+
+/* --------------------------------------------------------------------------
+   Keyframes
+   -------------------------------------------------------------------------- */
+
+@keyframes lp-fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes lp-rise-in {
+  from { opacity: 0; transform: translateY(var(--rise-md)); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes lp-rise-in-sm {
+  from { opacity: 0; transform: translateY(var(--rise-sm)); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes lp-pop-in {
+  from { opacity: 0; transform: translateY(var(--rise-md)) scale(0.97); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes lp-toast-in {
+  from { opacity: 0; transform: translateX(24px); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes lp-toast-out {
+  from { opacity: 1; transform: none; }
+  to { opacity: 0; transform: translateX(24px); }
+}
+
+@keyframes lp-shake {
+  0%, 100% { transform: none; }
+  20% { transform: translateX(-5px); }
+  40% { transform: translateX(4px); }
+  60% { transform: translateX(-3px); }
+  80% { transform: translateX(2px); }
+}
+
+@keyframes lp-spin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes lp-shimmer {
+  from { transform: translateX(-100%); }
+  to { transform: translateX(100%); }
+}
+
+@keyframes lp-unfold {
+  from { opacity: 0; transform: translateY(12px) scale(0.985); }
+  to { opacity: 1; transform: none; }
+}
+
+@keyframes lp-toast-progress {
+  from { transform: scaleX(1); }
+  to { transform: scaleX(0); }
+}
+
+/* --------------------------------------------------------------------------
+   Page / route change: soft fade + slight slide
+   -------------------------------------------------------------------------- */
+
+.page-transition {
+  animation: lp-rise-in var(--dur-page) var(--ease-out) backwards;
+}
+
+/* --------------------------------------------------------------------------
+   Staggered entrance (dashboards, card grids)
+   Children get --i from nth-child; up to 12 steps, then they enter together.
+   -------------------------------------------------------------------------- */
+
+.lp-stagger > * {
+  animation: lp-rise-in var(--dur-page) var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * var(--stagger-step));
+}
+
+.lp-stagger > *:nth-child(1) { --i: 0; }
+.lp-stagger > *:nth-child(2) { --i: 1; }
+.lp-stagger > *:nth-child(3) { --i: 2; }
+.lp-stagger > *:nth-child(4) { --i: 3; }
+.lp-stagger > *:nth-child(5) { --i: 4; }
+.lp-stagger > *:nth-child(6) { --i: 5; }
+.lp-stagger > *:nth-child(7) { --i: 6; }
+.lp-stagger > *:nth-child(8) { --i: 7; }
+.lp-stagger > *:nth-child(9) { --i: 8; }
+.lp-stagger > *:nth-child(10) { --i: 9; }
+.lp-stagger > *:nth-child(11) { --i: 10; }
+.lp-stagger > *:nth-child(n + 12) { --i: 11; }
+
+/* --------------------------------------------------------------------------
+   Table rows: fade in as they appear (first load, filtering)
+   -------------------------------------------------------------------------- */
+
+tbody tr {
+  animation: lp-rise-in-sm var(--dur-standard) var(--ease-out) backwards;
+}
+
+tbody tr:nth-child(2) { animation-delay: 15ms; }
+tbody tr:nth-child(3) { animation-delay: 30ms; }
+tbody tr:nth-child(4) { animation-delay: 45ms; }
+tbody tr:nth-child(5) { animation-delay: 60ms; }
+tbody tr:nth-child(6) { animation-delay: 75ms; }
+tbody tr:nth-child(7) { animation-delay: 90ms; }
+tbody tr:nth-child(8) { animation-delay: 105ms; }
+tbody tr:nth-child(n + 9) { animation-delay: 120ms; }
+
+/* Row hover: a tint layer fades in behind the cell content */
+td {
+  position: relative;
+  z-index: 0;
+}
+
+td::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: var(--row-hover, rgba(10, 10, 10, 0.035));
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-micro) var(--ease-standard);
+}
+
+tbody tr:hover td::before {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   Modals: backdrop fades (with blur), panel scales + fades in
+   -------------------------------------------------------------------------- */
+
+.modal-overlay,
+.lp-modal-overlay {
+  animation: lp-fade-in var(--dur-standard) var(--ease-out) backwards;
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+.modal-overlay > *,
+.lp-modal-overlay > * {
+  animation: lp-pop-in var(--dur-standard) var(--ease-out) backwards;
+  transform-origin: center 40%;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons: hover lift, press feedback, tint layer, spinner
+   -------------------------------------------------------------------------- */
+
+.lp-press {
+  transition:
+    transform var(--dur-micro) var(--ease-standard),
+    opacity var(--dur-micro) var(--ease-standard);
+}
+
+.btn-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  opacity: 0.85;
+  animation: lp-spin 0.7s linear infinite;
+}
+
+.btn-spinner.lg {
+  width: 18px;
+  height: 18px;
+}
+
+/* --------------------------------------------------------------------------
+   Forms: shake + highlight on validation errors
+   -------------------------------------------------------------------------- */
+
+.lp-shake {
+  animation: lp-shake var(--dur-page) var(--ease-standard) backwards;
+}
+
+/* Inline error messages appear with a small shake so they are noticed */
+.lp-alert.error,
+.login-error {
+  animation: lp-shake var(--dur-page) var(--ease-standard) backwards;
+}
+
+/* --------------------------------------------------------------------------
+   Skeleton loaders: shimmer is a translated gradient (transform only)
+   -------------------------------------------------------------------------- */
+
+.skeleton {
+  position: relative;
+  display: block;
+  overflow: hidden;
+  background: var(--skeleton-base, #ececea);
+  border-radius: 6px;
+  height: 12px;
+}
+
+.skeleton::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    90deg,
+    transparent 0%,
+    rgba(255, 255, 255, 0.65) 50%,
+    transparent 100%
+  );
+  transform: translateX(-100%);
+  animation: lp-shimmer 1.4s var(--ease-standard) infinite;
+}
+
+/* --------------------------------------------------------------------------
+   Payslip: unfold preview
+   -------------------------------------------------------------------------- */
+
+.payslip-sheet {
+  animation: lp-unfold var(--dur-page) var(--ease-out) backwards;
+  transform-origin: top center;
+}
+
+.payslip-sheet > * {
+  animation: lp-rise-in-sm var(--dur-page) var(--ease-out) backwards;
+}
+
+.payslip-sheet > *:nth-child(2) { animation-delay: 50ms; }
+.payslip-sheet > *:nth-child(3) { animation-delay: 100ms; }
+.payslip-sheet > *:nth-child(4) { animation-delay: 150ms; }
+.payslip-sheet > *:nth-child(n + 5) { animation-delay: 200ms; }
+
+/* --------------------------------------------------------------------------
+   Reduced motion: keep fades very short, remove movement, stop loops
+   -------------------------------------------------------------------------- */
+
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --dur-micro: 1ms;
+    --dur-standard: 1ms;
+    --dur-page: 1ms;
+    --stagger-step: 0ms;
+    --rise-sm: 0px;
+    --rise-md: 0px;
+  }
+
+  *,
+  *::before,
+  *::after {
+    animation-duration: 1ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 1ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  /* Loaders still show state, just without movement */
+  .skeleton::after {
+    display: none;
+  }
+
+  .btn-spinner {
+    animation: none !important;
+    border-right-color: currentColor;
+    opacity: 0.5;
+  }
+}
+
+@media print {
+  *,
+  *::before,
+  *::after {
+    animation: none !important;
+    transition: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Sortable headers
+   -------------------------------------------------------------------------- */
+
+.sort-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 0;
+  border: none;
+  background: none;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  cursor: pointer;
+}
+
+.sort-btn:hover,
+.sort-btn.is-active {
+  color: var(--text, #0c0a09);
+}
+
+.sort-arrows {
+  display: inline-grid;
+  opacity: 0;
+  transition:
+    transform var(--dur-micro) var(--ease-standard),
+    opacity var(--dur-micro) var(--ease-standard);
+}
+
+.sort-btn:hover .sort-arrows {
+  opacity: 0.45;
+}
+
+.sort-btn.is-active .sort-arrows {
+  opacity: 1;
+}
+
+.sort-btn.is-active.asc .sort-arrows {
+  transform: rotate(180deg);
+}
+
+/* Skeleton helpers */
+.skeleton-row {
+  animation: lp-fade-in var(--dur-standard) var(--ease-out) backwards !important;
+}
+
+.skeleton-row td::before {
+  display: none;
+}
+
+.skeleton-block {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.skeleton-inline {
+  display: inline-block;
+  vertical-align: middle;
+}
+
+/* Content that appears after an action (payroll preview, results) */
+.lp-reveal {
+  animation: lp-rise-in var(--dur-page) var(--ease-out) backwards;
+}
+
+/* Alerts that appear in place */
+.lp-alert {
+  animation: lp-rise-in-sm var(--dur-standard) var(--ease-out) backwards;
+}
+
+/* --------------------------------------------------------------------------
+   Inline payslip preview (My Payslips)
+   -------------------------------------------------------------------------- */
+
+.preview-chevron {
+  transition: transform var(--dur-standard) var(--ease-standard);
+}
+
+[aria-expanded="true"] .preview-chevron {
+  transform: rotate(180deg);
+}
+
+tbody tr.payslip-preview-row {
+  animation: none;
+}
+
+.payslip-preview-row > td {
+  padding: 0 14px 16px !important;
+}
+
+.payslip-preview-row > td::before {
+  display: none;
+}
+
+.payslip-preview {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+  transform-origin: top center;
+  animation: lp-unfold var(--dur-standard) var(--ease-out) backwards;
+}
+
+.payslip-preview > div {
+  padding: 12px 14px;
+  border-radius: var(--radius-md, 10px);
+  background: var(--surface-2, #fafaf9);
+  border: 1px solid var(--border, #e7e5e4);
+  animation: lp-rise-in-sm var(--dur-standard) var(--ease-out) backwards;
+}
+
+.payslip-preview > div:nth-child(2) { animation-delay: 30ms; }
+.payslip-preview > div:nth-child(3) { animation-delay: 60ms; }
+.payslip-preview > div:nth-child(4) { animation-delay: 90ms; }
+
+.payslip-preview span {
+  display: block;
+  font-size: 12px;
+  color: var(--text-3, #8a8480);
+  margin-bottom: 4px;
+}
+
+.payslip-preview strong {
+  font-size: 16px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.payslip-preview .is-net {
+  background: var(--brand, #0a0a0a);
+  border-color: var(--brand, #0a0a0a);
+  color: #fff;
+}
+
+.payslip-preview .is-net span {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+tr.is-expanded > td {
+  border-bottom-color: transparent;
+}
+
+@media (max-width: 760px) {
+  .payslip-preview {
+    grid-template-columns: 1fr 1fr;
+  }
+}

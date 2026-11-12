@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
 import { formatDateTime } from "../../utils/format";
+import { SkeletonRows } from "../../components/Skeleton";
 
 // Readable names for action codes
 const ACTION_LABELS = {
@@ -154,11 +155,7 @@ const AuditLog = () => {
 
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="5" className="lp-empty">
-                    Loading audit log...
-                  </td>
-                </tr>
+                <SkeletonRows rows={6} cols={5} />
               ) : logs.length > 0 ? (
                 logs.map((log) => (
                   <tr key={log._id}>

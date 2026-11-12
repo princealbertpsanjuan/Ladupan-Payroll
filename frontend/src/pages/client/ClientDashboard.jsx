@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
-import { formatMoney } from "../../utils/format";
+import Icon from "../../components/Icon";
+import CountUp from "../../components/CountUp";
+import { SkeletonText } from "../../components/Skeleton";
 import "../../styles/client.css";
 
 const ClientDashboard = () => {
@@ -52,77 +54,97 @@ const ClientDashboard = () => {
 
       <h2 className="client-section-title">Quick Access</h2>
 
-      <div className="client-quick-grid">
+      <div className="client-quick-grid lp-stagger">
         <Link to="/client/time" className="client-quick-card">
-          <div className="client-icon purple">⏰</div>
+          <div className="client-icon purple"><Icon name="clock" /></div>
           <h3>Time In / Out</h3>
           <p>Time In and Time Out for your daily attendance.</p>
-          <span>→</span>
+          <span>
+            <Icon name="arrowRight" size={18} />
+          </span>
         </Link>
 
         <Link to="/client/records" className="client-quick-card">
-          <div className="client-icon green">📋</div>
+          <div className="client-icon green"><Icon name="records" /></div>
           <h3>My Records</h3>
           <p>View your active DTR records not yet archived.</p>
-          <span>→</span>
+          <span>
+            <Icon name="arrowRight" size={18} />
+          </span>
         </Link>
 
         <Link to="/client/payslips" className="client-quick-card">
-          <div className="client-icon blue">🧾</div>
+          <div className="client-icon blue"><Icon name="receipt" /></div>
           <h3>My Payslips</h3>
           <p>View and print your payslips for each payroll.</p>
-          <span>→</span>
+          <span>
+            <Icon name="arrowRight" size={18} />
+          </span>
         </Link>
 
         <Link to="/client/corrections" className="client-quick-card">
-          <div className="client-icon orange">✏️</div>
+          <div className="client-icon orange"><Icon name="edit" /></div>
           <h3>DTR Corrections</h3>
           <p>Request a fix for a wrong or missing time entry.</p>
-          <span>→</span>
+          <span>
+            <Icon name="arrowRight" size={18} />
+          </span>
         </Link>
 
         <Link to="/client/archives" className="client-quick-card">
-          <div className="client-icon orange">🗂️</div>
+          <div className="client-icon orange"><Icon name="archive" /></div>
           <h3>My Archives</h3>
           <p>Access your archived DTR records from payroll.</p>
-          <span>→</span>
+          <span>
+            <Icon name="arrowRight" size={18} />
+          </span>
         </Link>
 
         <Link to="/client/account" className="client-quick-card">
-          <div className="client-icon blue">👤</div>
+          <div className="client-icon blue"><Icon name="user" /></div>
           <h3>My Account</h3>
           <p>View your account and change your password.</p>
-          <span>→</span>
+          <span>
+            <Icon name="arrowRight" size={18} />
+          </span>
         </Link>
       </div>
 
       <h2 className="client-section-title">Overview</h2>
 
-      <div className="client-overview-grid">
+      <div className="client-overview-grid lp-stagger">
         <div className="client-overview-card">
-          <div className="client-icon purple">⏰</div>
+          <div className="client-icon purple"><Icon name="clock" /></div>
           <div>
             <h4>Today</h4>
-            <strong>{todayStatus()}</strong>
+            <strong>{stats ? todayStatus() : <SkeletonText width={90} />}</strong>
             <p>{stats?.today || "Today's"} attendance.</p>
           </div>
         </div>
 
         <div className="client-overview-card">
-          <div className="client-icon green">📄</div>
+          <div className="client-icon green"><Icon name="records" /></div>
           <div>
             <h4>Active Records</h4>
-            <strong>{stats ? stats.activeRecords : "-"}</strong>
+            <strong>
+              {stats ? <CountUp value={stats.activeRecords} /> : <SkeletonText width={40} />}
+            </strong>
             <p>DTR records not yet included in payroll.</p>
           </div>
         </div>
 
         <div className="client-overview-card">
-          <div className="client-icon blue">🧾</div>
+          <div className="client-icon blue"><Icon name="receipt" /></div>
           <div>
             <h4>Latest Net Pay</h4>
             <strong>
-              {stats?.latestPayslip ? formatMoney(stats.latestPayslip.netSalary) : "None yet"}
+              {!stats ? (
+                <SkeletonText width={110} />
+              ) : stats.latestPayslip ? (
+                <CountUp value={stats.latestPayslip.netSalary} format="money" delay={40} />
+              ) : (
+                "None yet"
+              )}
             </strong>
             <p>
               {stats?.latestPayslip
@@ -133,17 +155,23 @@ const ClientDashboard = () => {
         </div>
 
         <div className="client-overview-card">
-          <div className="client-icon orange">💵</div>
+          <div className="client-icon orange"><Icon name="cash" /></div>
           <div>
             <h4>Cash Advance Balance</h4>
-            <strong>{stats ? formatMoney(stats.cashAdvanceBalance) : "-"}</strong>
+            <strong>
+              {stats ? (
+                <CountUp value={stats.cashAdvanceBalance} format="money" delay={80} />
+              ) : (
+                <SkeletonText width={100} />
+              )}
+            </strong>
             <p>Unpaid balance deducted through payroll.</p>
           </div>
         </div>
 
         {stats?.pendingCorrections > 0 && (
           <div className="client-overview-card">
-            <div className="client-icon purple">✏️</div>
+            <div className="client-icon purple"><Icon name="edit" /></div>
             <div>
               <h4>Pending Corrections</h4>
               <strong>{stats.pendingCorrections}</strong>

@@ -49,7 +49,7 @@
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.04);
 }
 

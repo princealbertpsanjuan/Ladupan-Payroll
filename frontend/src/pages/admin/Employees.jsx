@@ -1,5 +1,11 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import api from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
+import { SkeletonRows } from "../../components/Skeleton";
+import Spinner from "../../components/Spinner";
+import SortableTh from "../../components/SortableTh";
+import useSort from "../../hooks/useSort";
+import useFlipList from "../../hooks/useFlipList";
 import "../../styles/employees.css";
 
 const emptyForm = {
@@ -11,11 +17,22 @@ const emptyForm = {
   requiredTimeIn: "08:00",
 };
 
+const SORT_ACCESSORS = {
+  employeeId: (emp) => emp.employeeId || "",
+  name: (emp) => `${emp.firstName} ${emp.lastName}`.toLowerCase(),
+  email: (emp) => (emp.email || "").toLowerCase(),
+  hourlyRate: (emp) => Number(emp.hourlyRate || 0),
+  requiredTimeIn: (emp) => emp.requiredTimeIn || "",
+  status: (emp) => (emp.isActive ? 0 : 1),
+};
+
 const Employees = () => {
+  const toast = useToast();
+  const tbodyRef = useRef(null);
   const [employees, setEmployees] = useState([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   // Create / edit modal
   const [showFormModal, setShowFormModal] = useState(false);
@@ -28,8 +45,8 @@ const Employees = () => {
   const [deleteModal, setDeleteModal] = useState(false);
   const [selectedEmployee, setSelectedEmployee] = useState(null);
   const [deleteError, setDeleteError] = useState("");
-
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const [deleting, setDeleting] = useState(false);
+  const [togglingId, setTogglingId] = useState(null);
 
   useEffect(() => {
     fetchEmployees();
@@ -41,10 +58,7 @@ const Employees = () => {
       const res = await api.get("/employees");
       setEmployees(Array.isArray(res.data) ? res.data : []);
     } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Failed to load employees.",
-      });
+      toast.error(error.response?.data?.message || "Failed to load employees.");
     } finally {
       setLoading(false);
     }
@@ -108,16 +122,12 @@ const Employees = () => {
 
         await api.put(`/employees/${editingEmployee._id}`, payload);
 
-        setMessage({
-          type: "success",
-          text: `${form.firstName} ${form.lastName} was updated.`,
-        });
+        toast.success(`${form.firstName} ${form.lastName} was updated.`);
       } else {
         const res = await api.post("/employees/create", form);
 
-        setMessage({
-          type: "success",
-          text: `Employee created with ID ${res.data.employee?.employeeId}.`,
+        toast.success(`Employee ID ${res.data.employee?.employeeId} was created.`, {
+          title: "Employee created",
         });
       }
 
@@ -132,23 +142,23 @@ const Employees = () => {
 
   const toggleStatus = async (employee) => {
     try {
+      setTogglingId(employee._id);
+
       await api.put(`/employees/${employee._id}`, {
         isActive: !employee.isActive,
       });
 
-      setMessage({
-        type: "success",
-        text: `${employee.firstName} ${employee.lastName} is now ${
+      toast.success(
+        `${employee.firstName} ${employee.lastName} is now ${
           employee.isActive ? "inactive" : "active"
-        }.`,
-      });
+        }.`
+      );
 
-      fetchEmployees();
+      await fetchEmployees();
     } catch (error) {
-      setMessage({
-        type: "error",
-        text: error.response?.data?.message || "Failed to update status.",
-      });
+      toast.error(error.response?.data?.message || "Failed to update status.");
+    } finally {
+      setTogglingId(null);
     }
   };
 
@@ -166,17 +176,19 @@ const Employees = () => {
 
   const confirmDelete = async () => {
     try {
+      setDeleting(true);
       await api.delete(`/employees/${selectedEmployee._id}`);
 
-      setMessage({
-        type: "success",
-        text: `${selectedEmployee.firstName} ${selectedEmployee.lastName} was deleted.`,
-      });
+      toast.success(
+        `${selectedEmployee.firstName} ${selectedEmployee.lastName} was deleted.`
+      );
 
       closeDeleteModal();
       fetchEmployees();
     } catch (error) {
       setDeleteError(error.response?.data?.message || "Failed to delete employee.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -197,6 +209,10 @@ const Employees = () => {
     return matchesSearch && matchesStatus;
   });
 
+  const { sortedRows, sort, toggleSort } = useSort(filteredEmployees, SORT_ACCESSORS);
+
+  useFlipList(tbodyRef, `${sort.key}-${sort.direction}-${search}-${statusFilter}`);
+
   return (
     <div className="employees-page">
       <div className="employees-header">
@@ -209,10 +225,6 @@ const Employees = () => {
           + Create Employee
         </button>
       </div>
-
-      {message.text && (
-        <div className={`lp-alert ${message.type}`}>{message.text}</div>
-      )}
 
       <div className="employee-toolbar">
         <input
@@ -241,7 +253,8 @@ const Employees = () => {
           Reset
         </button>
 
-        <button className="search-btn" onClick={fetchEmployees}>
+        <button className="search-btn" onClick={fetchEmployees} disabled={loading} aria-busy={loading}>
+          {loading && <Spinner />}
           Refresh
         </button>
       </div>
@@ -251,27 +264,21 @@ const Employees = () => {
           <table className="employee-table">
             <thead>
               <tr>
-                <th>Employee ID</th>
-                <th>Name</th>
-                <th>Email</th>
-                <th>Hourly Rate</th>
-                <th>Required Time In</th>
-                <th>Status</th>
+                <SortableTh label="Employee ID" column="employeeId" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Name" column="name" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Email" column="email" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Hourly Rate" column="hourlyRate" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Required Time In" column="requiredTimeIn" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Status" column="status" sort={sort} onSort={toggleSort} />
                 <th>Actions</th>
               </tr>
             </thead>
 
-            <tbody>
-              {loading && employees.length === 0 && (
-                <tr>
-                  <td colSpan="7" className="empty-row">
-                    Loading employees...
-                  </td>
-                </tr>
-              )}
+            <tbody ref={tbodyRef}>
+              {loading && employees.length === 0 && <SkeletonRows rows={6} cols={7} />}
 
-              {filteredEmployees.map((emp) => (
-                <tr key={emp._id}>
+              {sortedRows.map((emp) => (
+                <tr key={emp._id} data-key={emp._id}>
                   <td>{emp.employeeId}</td>
                   <td>
                     {emp.firstName} {emp.lastName}
@@ -285,7 +292,7 @@ const Employees = () => {
                         emp.isActive ? "status active" : "status inactive"
                       }
                     >
-                      ● {emp.isActive ? "Active" : "Inactive"}
+                      {emp.isActive ? "Active" : "Inactive"}
                     </span>
                   </td>
                   <td>
@@ -300,7 +307,10 @@ const Employees = () => {
                       <button
                         className="lp-btn secondary small"
                         onClick={() => toggleStatus(emp)}
+                        disabled={togglingId === emp._id}
+                        aria-busy={togglingId === emp._id}
                       >
+                        {togglingId === emp._id && <Spinner />}
                         {emp.isActive ? "Deactivate" : "Activate"}
                       </button>
 
@@ -353,7 +363,7 @@ const Employees = () => {
 
             {formError && <div className="lp-alert error">{formError}</div>}
 
-            <form className="employee-form" onSubmit={saveEmployee}>
+            <form className="employee-form" onSubmit={saveEmployee} autoComplete="off">
               <div className="lp-form-grid">
                 <div className="lp-field">
                   <label>First Name</label>
@@ -383,7 +393,8 @@ const Employees = () => {
                 <input
                   name="email"
                   type="email"
-                  placeholder="Email"
+                  placeholder="employee@email.com"
+                  autoComplete="off"
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -395,6 +406,7 @@ const Employees = () => {
                 <input
                   name="password"
                   type="password"
+                  autoComplete="new-password"
                   placeholder={
                     editingEmployee
                       ? "Leave blank to keep the current password"
@@ -450,7 +462,8 @@ const Employees = () => {
                   Cancel
                 </button>
 
-                <button type="submit" className="save-btn" disabled={saving}>
+                <button type="submit" className="save-btn" disabled={saving} aria-busy={saving}>
+                  {saving && <Spinner />}
                   {saving
                     ? "Saving..."
                     : editingEmployee
@@ -494,8 +507,14 @@ const Employees = () => {
                 Cancel
               </button>
 
-              <button className="confirm-delete-btn" onClick={confirmDelete}>
-                Delete
+              <button
+                className="confirm-delete-btn"
+                onClick={confirmDelete}
+                disabled={deleting}
+                aria-busy={deleting}
+              >
+                {deleting && <Spinner />}
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

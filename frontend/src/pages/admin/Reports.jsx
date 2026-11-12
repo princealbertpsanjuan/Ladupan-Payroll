@@ -3,11 +3,12 @@ import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import { formatMinutes } from "../../utils/format";
 import "../../styles/reports.css";
+import { SkeletonRows } from "../../components/Skeleton";
 
 const Reports = () => {
   const [reports, setReports] = useState([]);
   const [selectedReport, setSelectedReport] = useState(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const [search, setSearch] = useState("");
   const [filter, setFilter] = useState("All");
@@ -138,11 +139,7 @@ const Reports = () => {
 
           <tbody>
             {loading ? (
-              <tr>
-                <td colSpan="5" className="empty-text">
-                  Loading reports...
-                </td>
-              </tr>
+              <SkeletonRows rows={6} cols={5} />
             ) : filteredReports.length > 0 ? (
               filteredReports.map((report) => (
                 <tr key={report._id}>

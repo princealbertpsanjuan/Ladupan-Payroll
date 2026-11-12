@@ -1,14 +1,22 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
 import StatusBadge from "../../components/StatusBadge";
+import Spinner from "../../components/Spinner";
 import { formatMoney, formatMinutes } from "../../utils/format";
 import "../../styles/timeinout.css";
 
 const TimeInOut = () => {
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const toast = useToast();
+
+  // Results and errors are shown as toasts
+  const setMessage = ({ type, text }) => {
+    if (text) toast[type](text);
+  };
   const [attendance, setAttendance] = useState(null);
   const [serverDate, setServerDate] = useState("");
   const [loading, setLoading] = useState(false);
+  const [busyAction, setBusyAction] = useState("");
   const [checking, setChecking] = useState(true);
   const [now, setNow] = useState(new Date());
 
@@ -37,10 +45,14 @@ const TimeInOut = () => {
   const handleTimeIn = async () => {
     try {
       setLoading(true);
+      setBusyAction("in");
 
       const res = await api.post("/attendance/time-in");
 
-      setMessage({ type: "success", text: res.data.message });
+      setMessage({
+        type: res.data.attendance?.remarks === "Absent" ? "warning" : "success",
+        text: res.data.message,
+      });
       setAttendance(res.data.attendance);
     } catch (err) {
       setMessage({
@@ -49,12 +61,14 @@ const TimeInOut = () => {
       });
     } finally {
       setLoading(false);
+      setBusyAction("");
     }
   };
 
   const handleTimeOut = async () => {
     try {
       setLoading(true);
+      setBusyAction("out");
 
       const res = await api.put("/attendance/time-out");
 
@@ -67,6 +81,7 @@ const TimeInOut = () => {
       });
     } finally {
       setLoading(false);
+      setBusyAction("");
     }
   };
 
@@ -107,26 +122,24 @@ const TimeInOut = () => {
             className="time-in-btn"
             onClick={handleTimeIn}
             disabled={loading || checking || hasTimedIn}
+            aria-busy={busyAction === "in"}
           >
-            {loading && !hasTimedIn ? "Processing..." : hasTimedIn ? "Timed In ✓" : "Time In"}
+            {busyAction === "in" && <Spinner />}
+            {busyAction === "in" ? "Recording..." : hasTimedIn ? "Timed In ✓" : "Time In"}
           </button>
 
           <button
             className="time-out-btn"
             onClick={handleTimeOut}
             disabled={loading || checking || !hasTimedIn || hasTimedOut}
+            aria-busy={busyAction === "out"}
           >
-            {loading && hasTimedIn ? "Processing..." : hasTimedOut ? "Timed Out ✓" : "Time Out"}
+            {busyAction === "out" && <Spinner />}
+            {busyAction === "out" ? "Recording..." : hasTimedOut ? "Timed Out ✓" : "Time Out"}
           </button>
         </div>
 
-        {message.text && (
-          <div className={`attendance-message lp-alert ${message.type}`}>
-            {message.text}
-          </div>
-        )}
-
-        {!checking && hasTimedIn && hasTimedOut && !message.text && (
+        {!checking && hasTimedIn && hasTimedOut && (
           <div className="attendance-message lp-alert info">
             Your attendance for today is complete. If something is wrong,
             send a DTR correction request from My Records.

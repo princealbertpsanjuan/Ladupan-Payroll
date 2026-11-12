@@ -1,6 +1,9 @@
 import { useEffect, useState } from "react";
 import api from "../../api/axios";
+import Spinner from "../../components/Spinner";
+import { useToast } from "../../context/ToastContext";
 import { formatDateTime, getEmployeeName } from "../../utils/format";
+import { SkeletonRows } from "../../components/Skeleton";
 
 const TABS = [
   { value: "pending", label: "Pending" },
@@ -15,7 +18,12 @@ const Corrections = () => {
   const [pendingCount, setPendingCount] = useState(0);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const toast = useToast();
+
+  // Results and errors are shown as toasts
+  const setMessage = ({ type, text }) => {
+    if (text) toast[type](text);
+  };
 
   // Review modal
   const [reviewing, setReviewing] = useState(null);
@@ -100,8 +108,6 @@ const Corrections = () => {
         </div>
       </div>
 
-      {message.text && <div className={`lp-alert ${message.type}`}>{message.text}</div>}
-
       <div className="lp-tabs">
         {TABS.map((tab) => (
           <button
@@ -143,11 +149,7 @@ const Corrections = () => {
 
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="lp-empty">
-                    Loading requests...
-                  </td>
-                </tr>
+                <SkeletonRows rows={6} cols={7} />
               ) : filteredCorrections.length > 0 ? (
                 filteredCorrections.map((correction) => (
                   <tr key={correction._id}>
@@ -285,7 +287,9 @@ const Corrections = () => {
                 className={`lp-btn ${reviewAction === "approve" ? "success" : "danger"}`}
                 onClick={submitReview}
                 disabled={saving}
+              aria-busy={saving}
               >
+                {saving && <Spinner />}
                 {saving
                   ? "Saving..."
                   : reviewAction === "approve"
