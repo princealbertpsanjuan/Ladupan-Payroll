@@ -59,6 +59,22 @@ curl -X POST http://localhost:5000/api/auth/register \
 After that, `/api/auth/register` is closed, and employee accounts are created by
 the admin in **Employee Management**.
 
+### 4. Clean the database before going live
+
+Removes all test data but **keeps admin accounts and Shop Network settings**:
+employees, DTR (active and archived), payroll reports/payslips, cash
+advances, correction requests, notifications, and the audit log are deleted,
+and Employee IDs restart after the highest one still in use.
+
+```bash
+cd backend
+npm run clean-db               # preview: shows what would be deleted
+npm run clean-db -- --confirm  # backs up to backend/backups/, then deletes
+```
+
+The backup folder holds passwords (hashed) and salary data. It is ignored by
+git; keep it private and delete it once you no longer need it.
+
 ## Rules
 
 ### Attendance
