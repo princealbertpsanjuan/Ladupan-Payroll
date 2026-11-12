@@ -363,7 +363,7 @@ const Employees = () => {
 
             {formError && <div className="lp-alert error">{formError}</div>}
 
-            <form className="employee-form" onSubmit={saveEmployee}>
+            <form className="employee-form" onSubmit={saveEmployee} autoComplete="off">
               <div className="lp-form-grid">
                 <div className="lp-field">
                   <label>First Name</label>
@@ -393,7 +393,8 @@ const Employees = () => {
                 <input
                   name="email"
                   type="email"
-                  placeholder="Email"
+                  placeholder="employee@email.com"
+                  autoComplete="off"
                   value={form.email}
                   onChange={handleChange}
                   required
@@ -405,6 +406,7 @@ const Employees = () => {
                 <input
                   name="password"
                   type="password"
+                  autoComplete="new-password"
                   placeholder={
                     editingEmployee
                       ? "Leave blank to keep the current password"
