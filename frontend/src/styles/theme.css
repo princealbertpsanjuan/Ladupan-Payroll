@@ -1564,3 +1564,30 @@ table td {
 .status {
   text-transform: none;
 }
+
+/* My Account: long values (emails) wrap inside their tile */
+.account-info-box {
+  min-width: 0;
+}
+
+.account-info-box strong {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.profile-section p {
+  overflow-wrap: anywhere;
+}
+
+.profile-avatar {
+  background: var(--brand) !important;
+  color: #fff;
+}
+
+/* Section title as the first thing in a card: no extra top gap */
+.myaccount-card > .settings-title:first-child,
+.lp-card > .section-title:first-child {
+  margin-top: 0;
+}

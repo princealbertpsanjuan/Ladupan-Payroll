@@ -106,7 +106,9 @@ const MyAccount = () => {
 
           <div className="account-info-box">
             <span>Role</span>
-            <strong>{user?.role || "-"}</strong>
+            <strong>
+              {user?.role === "admin" ? "Administrator" : user?.role ? "Employee" : "-"}
+            </strong>
           </div>
 
           <div className="account-info-box">
