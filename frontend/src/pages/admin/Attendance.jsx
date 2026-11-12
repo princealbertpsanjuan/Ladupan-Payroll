@@ -8,6 +8,7 @@ import SortableTh from "../../components/SortableTh";
 import useSort from "../../hooks/useSort";
 import useFlipList from "../../hooks/useFlipList";
 import StatusBadge from "../../components/StatusBadge";
+import Icon from "../../components/Icon";
 import {
   formatMoney,
   formatDate,
@@ -24,6 +25,11 @@ const emptyForm = {
   timeOut: "",
 };
 
+const VIEW_STORAGE_KEY = "lp-attendance-view";
+
+const getInitials = (employee) =>
+  `${employee?.firstName?.[0] || ""}${employee?.lastName?.[0] || ""}`.toUpperCase() || "?";
+
 const SORT_ACCESSORS = {
   employee: (record) => getEmployeeName(record.employee).toLowerCase(),
   date: (record) => formatDate(record.date),
@@ -37,7 +43,17 @@ const SORT_ACCESSORS = {
 const Attendance = () => {
   const [searchParams] = useSearchParams();
   const toast = useToast();
-  const tbodyRef = useRef(null);
+  const tableRef = useRef(null);
+
+  // "employee" = grouped by employee (default), "list" = all records
+  const [viewMode, setViewMode] = useState(() => {
+    try {
+      return localStorage.getItem(VIEW_STORAGE_KEY) || "employee";
+    } catch {
+      return "employee";
+    }
+  });
+  const [collapsedGroups, setCollapsedGroups] = useState([]);
 
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
@@ -186,9 +202,109 @@ const Attendance = () => {
 
   const { sortedRows, sort, toggleSort } = useSort(filteredRecords, SORT_ACCESSORS);
 
+  // Group records by employee (alphabetical). Each group keeps the
+  // current sort order inside it, and totals use only the shown records.
+  const groups = (() => {
+    const map = new Map();
+
+    sortedRows.forEach((record) => {
+      const id = record.employee?._id || "deleted";
+
+      if (!map.has(id)) {
+        map.set(id, {
+          id,
+          employee: record.employee,
+          records: [],
+          totalHours: 0,
+          grossPay: 0,
+          lateCount: 0,
+          incompleteCount: 0,
+        });
+      }
+
+      const group = map.get(id);
+      group.records.push(record);
+      group.totalHours += Number(record.totalHours || 0);
+      group.grossPay += Number(record.grossPay || 0);
+      if (record.remarks === "Late") group.lateCount++;
+      if (isIncompleteRecord(record)) group.incompleteCount++;
+    });
+
+    const list = [...map.values()].map((group) => ({
+      ...group,
+      totalHours: Number(group.totalHours.toFixed(2)),
+    }));
+
+    list.sort((a, b) =>
+      getEmployeeName(a.employee).localeCompare(getEmployeeName(b.employee))
+    );
+
+    if (sort.key === "employee" && sort.direction === "desc") list.reverse();
+
+    return list;
+  })();
+
+  const columnCount = viewMode === "list" ? 9 : 8;
+
+  const toggleGroup = (id) => {
+    setCollapsedGroups((current) =>
+      current.includes(id) ? current.filter((item) => item !== id) : [...current, id]
+    );
+  };
+
+  const changeViewMode = (mode) => {
+    setViewMode(mode);
+    try {
+      localStorage.setItem(VIEW_STORAGE_KEY, mode);
+    } catch {
+      // storage unavailable
+    }
+  };
+
   useFlipList(
-    tbodyRef,
-    `${sort.key}-${sort.direction}-${search}-${statusFilter}-${dateFilter}`
+    tableRef,
+    `${viewMode}-${sort.key}-${sort.direction}-${search}-${statusFilter}-${dateFilter}-${collapsedGroups.join(",")}`
+  );
+
+  const renderRecordRow = (record, showEmployee) => (
+    <tr key={record._id} data-key={record._id}>
+      {showEmployee && (
+        <td>
+          {getEmployeeName(record.employee)}
+          <div className="lp-muted">{record.employee?.employeeId}</div>
+        </td>
+      )}
+      <td>{formatDate(record.date)}</td>
+      <td>
+        {record.timeIn || "-"}
+        <div className="lp-muted">Required {record.requiredTimeIn || "-"}</div>
+      </td>
+      <td>{record.timeOut || "-"}</td>
+      <td>{record.totalHours || 0}</td>
+      <td>
+        {formatMoney(record.grossPay)}
+        <div className="lp-muted">@ {formatMoney(record.hourlyRate)}/hr</div>
+      </td>
+      <td>{formatMinutes(record.lateMinutes)}</td>
+      <td>
+        <StatusBadge record={record} />
+      </td>
+      <td className="action-buttons">
+        <button className="edit-btn" onClick={() => openEditModal(record)}>
+          {isIncompleteRecord(record) ? "Set Time Out" : "Edit"}
+        </button>
+
+        <button
+          className="delete-btn"
+          onClick={() => {
+            setDeleteError("");
+            setDeleteRecord(record);
+          }}
+        >
+          Delete
+        </button>
+      </td>
+    </tr>
   );
 
   return (
@@ -253,12 +369,33 @@ const Attendance = () => {
           >
             Reset
           </button>
+
+          <div className="view-switch" role="group" aria-label="View">
+            <button
+              type="button"
+              className={viewMode === "employee" ? "active" : ""}
+              aria-pressed={viewMode === "employee"}
+              onClick={() => changeViewMode("employee")}
+            >
+              By employee
+            </button>
+            <button
+              type="button"
+              className={viewMode === "list" ? "active" : ""}
+              aria-pressed={viewMode === "list"}
+              onClick={() => changeViewMode("list")}
+            >
+              All records
+            </button>
+          </div>
         </div>
 
-        <table>
+        <table ref={tableRef} className="attendance-table">
           <thead>
             <tr>
-              <SortableTh label="Employee" column="employee" sort={sort} onSort={toggleSort} />
+              {viewMode === "list" && (
+                <SortableTh label="Employee" column="employee" sort={sort} onSort={toggleSort} />
+              )}
               <SortableTh label="Date" column="date" sort={sort} onSort={toggleSort} />
               <SortableTh label="Time In" column="timeIn" sort={sort} onSort={toggleSort} />
               <th>Time Out</th>
@@ -270,61 +407,105 @@ const Attendance = () => {
             </tr>
           </thead>
 
-          <tbody ref={tbodyRef}>
-            {loading && records.length === 0 ? (
-              <SkeletonRows rows={6} cols={9} />
-            ) : sortedRows.length > 0 ? (
-              sortedRows.map((record) => (
-                <tr key={record._id} data-key={record._id}>
-                  <td>
-                    {getEmployeeName(record.employee)}
-                    <div className="lp-muted">{record.employee?.employeeId}</div>
-                  </td>
-                  <td>{formatDate(record.date)}</td>
-                  <td>
-                    {record.timeIn || "-"}
-                    <div className="lp-muted">Required {record.requiredTimeIn || "-"}</div>
-                  </td>
-                  <td>{record.timeOut || "-"}</td>
-                  <td>{record.totalHours || 0}</td>
-                  <td>
-                    {formatMoney(record.grossPay)}
-                    <div className="lp-muted">@ {formatMoney(record.hourlyRate)}/hr</div>
-                  </td>
-                  <td>{formatMinutes(record.lateMinutes)}</td>
-                  <td>
-                    <StatusBadge record={record} />
-                  </td>
-                  <td className="action-buttons">
-                    <button className="edit-btn" onClick={() => openEditModal(record)}>
-                      {isIncompleteRecord(record) ? "Set Time Out" : "Edit"}
-                    </button>
-
-                    <button
-                      className="delete-btn"
-                      onClick={() => {
-                        setDeleteError("");
-                        setDeleteRecord(record);
-                      }}
-                    >
-                      Delete
-                    </button>
-                  </td>
-                </tr>
-              ))
-            ) : (
+          {loading && records.length === 0 ? (
+            <tbody>
+              <SkeletonRows rows={6} cols={columnCount} />
+            </tbody>
+          ) : sortedRows.length === 0 ? (
+            <tbody>
               <tr>
-                <td colSpan="9" className="empty-text">
+                <td colSpan={columnCount} className="empty-text">
                   No attendance records found.
                 </td>
               </tr>
-            )}
-          </tbody>
+            </tbody>
+          ) : viewMode === "list" ? (
+            <tbody>{sortedRows.map((record) => renderRecordRow(record, true))}</tbody>
+          ) : (
+            groups.map((group) => {
+              const isCollapsed = collapsedGroups.includes(group.id);
+
+              return (
+                <tbody key={group.id} className="employee-group">
+                  <tr className="group-row" data-key={`group-${group.id}`}>
+                    <td colSpan={columnCount}>
+                      <div className="group-header">
+                        <button
+                          type="button"
+                          className="group-toggle"
+                          aria-expanded={!isCollapsed}
+                          onClick={() => toggleGroup(group.id)}
+                        >
+                          <Icon name="chevronDown" size={16} className="group-chevron" />
+                          <span className="group-avatar">{getInitials(group.employee)}</span>
+                          <span className="group-name">
+                            <strong>{getEmployeeName(group.employee)}</strong>
+                            <span>
+                              {group.employee?.employeeId || "-"}
+                              {group.employee?.hourlyRate !== undefined &&
+                                ` · ${formatMoney(group.employee.hourlyRate)}/hr`}
+                              {group.employee?.requiredTimeIn &&
+                                ` · Required ${group.employee.requiredTimeIn}`}
+                            </span>
+                          </span>
+                        </button>
+
+                        <div className="group-stats">
+                          <span>
+                            <strong>{group.records.length}</strong> record
+                            {group.records.length !== 1 ? "s" : ""}
+                          </span>
+                          <span>
+                            <strong>{group.totalHours}</strong> hrs
+                          </span>
+                          <span>
+                            <strong>{formatMoney(group.grossPay)}</strong> gross
+                          </span>
+                          {group.lateCount > 0 && (
+                            <span className="status late">{group.lateCount} late</span>
+                          )}
+                          {group.incompleteCount > 0 && (
+                            <span className="status incomplete">
+                              {group.incompleteCount} no time-out
+                            </span>
+                          )}
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {!isCollapsed && group.records.map((record) => renderRecordRow(record, false))}
+                </tbody>
+              );
+            })
+          )}
         </table>
 
         <div className="attendance-footer">
           Showing {filteredRecords.length} of {records.length} active DTR record
           {records.length !== 1 ? "s" : ""}
+          {viewMode === "employee" && sortedRows.length > 0 && (
+            <>
+              {" "}
+              · {groups.length} employee{groups.length !== 1 ? "s" : ""}
+              {groups.length > 1 && (
+                <>
+                  {" · "}
+                  <button
+                    type="button"
+                    className="link-btn"
+                    onClick={() =>
+                      setCollapsedGroups(
+                        collapsedGroups.length === groups.length ? [] : groups.map((g) => g.id)
+                      )
+                    }
+                  >
+                    {collapsedGroups.length === groups.length ? "Expand all" : "Collapse all"}
+                  </button>
+                </>
+              )}
+            </>
+          )}
         </div>
       </div>
 

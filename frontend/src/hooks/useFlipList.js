@@ -15,7 +15,7 @@ const useFlipList = (containerRef, orderKey) => {
     const container = containerRef.current;
     if (!container) return;
 
-    const rows = Array.from(container.querySelectorAll(":scope > tr[data-key]"));
+    const rows = Array.from(container.querySelectorAll("tr[data-key]"));
     const next = new Map();
 
     rows.forEach((row) => {
