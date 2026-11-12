@@ -146,6 +146,11 @@ const TimeInOut = () => {
                 check again
               </button>
               . You can still view your records from anywhere.
+              {network?.ip && (
+                <div className="lp-muted" style={{ marginTop: 6 }}>
+                  Your connection: {network.ip}
+                </div>
+              )}
             </div>
           </div>
         )}
