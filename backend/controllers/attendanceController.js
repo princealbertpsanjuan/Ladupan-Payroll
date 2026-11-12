@@ -11,6 +11,7 @@ const {
   isValidTime,
 } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
+const { notifyUser } = require("../utils/notify");
 
 const snapshot = (record) => ({
   date: record.date,
@@ -294,6 +295,14 @@ exports.createAttendance = async (req, res) => {
       details: { after: snapshot(attendance) },
     });
 
+    await notifyUser(employee._id, {
+      type: "attendance_updated",
+      level: "info",
+      title: "The admin added a DTR record for you",
+      message: `${date}: ${timeIn} – ${timeOut || "no time-out"} (${attendance.remarks}).`,
+      link: "/client/records",
+    });
+
     await attendance.populate(
       "employee",
       "employeeId firstName lastName requiredTimeIn hourlyRate"
@@ -407,6 +416,26 @@ exports.updateAttendance = async (req, res) => {
       details: { before, after: snapshot(attendance) },
     });
 
+    const changes = [];
+    if (before.requiredTimeIn !== attendance.requiredTimeIn) {
+      changes.push(`required time-in ${before.requiredTimeIn} → ${attendance.requiredTimeIn}`);
+    }
+    if (before.timeIn !== attendance.timeIn) changes.push(`time in ${before.timeIn || "-"} → ${attendance.timeIn}`);
+    if (before.timeOut !== attendance.timeOut) {
+      changes.push(`time out ${before.timeOut || "-"} → ${attendance.timeOut || "-"}`);
+    }
+    if (before.date !== attendance.date) changes.push(`date ${before.date} → ${attendance.date}`);
+
+    if (changes.length > 0) {
+      await notifyUser(attendance.employee?._id || attendance.employee, {
+        type: "attendance_updated",
+        level: "info",
+        title: `The admin updated your DTR for ${attendance.date}`,
+        message: `${changes.join(", ")}. Now: ${attendance.remarks}, ${attendance.totalHours} hrs.`,
+        link: "/client/records",
+      });
+    }
+
     res.json({
       message: "Attendance record updated",
       attendance,
@@ -447,6 +476,14 @@ exports.deleteAttendance = async (req, res) => {
       entityId: attendance._id,
       description: `Deleted DTR of ${fullName(attendance.employee)} on ${attendance.date}`,
       details: { before: snapshot(attendance) },
+    });
+
+    await notifyUser(attendance.employee?._id || attendance.employee, {
+      type: "attendance_updated",
+      level: "warning",
+      title: `The admin deleted your DTR for ${attendance.date}`,
+      message: `The record ${attendance.timeIn || "-"} – ${attendance.timeOut || "-"} was removed.`,
+      link: "/client/records",
     });
 
     res.json({

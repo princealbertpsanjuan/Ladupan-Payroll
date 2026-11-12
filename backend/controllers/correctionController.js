@@ -4,6 +4,7 @@ const User = require("../models/User");
 const { applyAttendanceRules, timeToMinutes } = require("../utils/attendanceRules");
 const { getToday, isValidDate, isValidTime } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
+const { notifyUser, notifyAdmins } = require("../utils/notify");
 
 const EMPLOYEE_FIELDS = "employeeId firstName lastName";
 
@@ -107,6 +108,14 @@ exports.createCorrection = async (req, res) => {
         requested: { timeIn: requestedTimeIn, timeOut },
         reason: correction.reason,
       },
+    });
+
+    await notifyAdmins({
+      type: "correction_submitted",
+      level: "info",
+      title: `${fullName(req.user)} requested a DTR correction`,
+      message: `For ${date}: ${requestedTimeIn} – ${timeOut || "no time-out"}. Reason: ${correction.reason}`,
+      link: "/admin/corrections",
     });
 
     res.status(201).json({
@@ -276,6 +285,14 @@ exports.approveCorrection = async (req, res) => {
       },
     });
 
+    await notifyUser(correction.employee._id, {
+      type: "correction_reviewed",
+      level: "success",
+      title: "Your DTR correction was approved",
+      message: `Your record for ${correction.date} is now ${attendance.timeIn} – ${attendance.timeOut || "no time-out"}.${correction.adminNote ? ` Note: ${correction.adminNote}` : ""}`,
+      link: "/client/records",
+    });
+
     res.json({
       message: "Correction approved and DTR updated",
       correction,
@@ -323,6 +340,16 @@ exports.rejectCorrection = async (req, res) => {
         adminNote: correction.adminNote,
       },
     });
+
+    if (correction.employee) {
+      await notifyUser(correction.employee._id, {
+        type: "correction_reviewed",
+        level: "warning",
+        title: "Your DTR correction was not approved",
+        message: `Request for ${correction.date}.${correction.adminNote ? ` Note: ${correction.adminNote}` : ""}`,
+        link: "/client/corrections",
+      });
+    }
 
     res.json({
       message: "Correction request rejected",

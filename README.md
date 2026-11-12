@@ -29,6 +29,7 @@ npm run dev            # or: npm start
 | `JWT_SECRET`   | Long random string used to sign login tokens             |
 | `PORT`         | API port (default `5000`)                                |
 | `APP_TIMEZONE` | Attendance timezone (default `Asia/Manila`)              |
+| `TRUST_PROXY`  | Only if the backend is hosted behind a proxy (Render, Railway, Nginx): set to `1`. Leave unset otherwise. |
 
 ### 2. Frontend
 
@@ -101,6 +102,39 @@ Net Salary = Gross Pay − Cash Advance − Other Deductions
 4. **Generate Payroll** saves the report, creates payslips, records the cash
    advance repayments, and archives **only the selected employees' DTR records
    in that period**.
+
+### Shop network (Time In / Time Out only on the shop Wi-Fi)
+
+1. On a device connected to the **shop Wi-Fi**, sign in as admin and open
+   **Shop Network**.
+2. Click **Add this network**. This saves the shop's IP address as you see it.
+3. Turn the switch **ON**.
+
+From then on, employees can Time In / Time Out only from that network. Viewing
+records, payslips, and corrections still works from anywhere. Attempts from
+other networks are blocked, written to the Audit Log, and the admin gets a
+notification (at most one per employee every 15 minutes).
+
+- If the backend runs **on a shop computer**, employees reach it through the
+  shop's local network, so add the local range instead, e.g. `192.168.1.0/24`
+  (the "Add this network" button shows the address the server sees).
+- If the backend is **hosted online**, the shop's public IP is what counts.
+  Most providers can change it (for example after a router restart). If
+  employees suddenly can't time in at the shop, add the network again.
+- Behind a hosting proxy, set `TRUST_PROXY=1`, otherwise every visitor looks
+  like the proxy's address. Do not set it when there is no proxy, or someone
+  could fake the shop's address.
+
+### Notifications
+
+The bell in the sidebar shows in-app notifications (checked every 30 seconds
+and when you return to the tab; new ones also pop up as a toast).
+
+- **Admin:** blocked time in/out attempts outside the shop, new DTR correction
+  requests.
+- **Employee:** payslip ready, DTR correction approved/rejected, the admin
+  added/edited/deleted their DTR (including a changed required time-in), cash
+  advance recorded.
 
 ## Features
 

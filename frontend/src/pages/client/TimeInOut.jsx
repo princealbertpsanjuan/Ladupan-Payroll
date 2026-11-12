@@ -3,6 +3,7 @@ import api from "../../api/axios";
 import { useToast } from "../../context/ToastContext";
 import StatusBadge from "../../components/StatusBadge";
 import Spinner from "../../components/Spinner";
+import Icon from "../../components/Icon";
 import { formatMoney, formatMinutes } from "../../utils/format";
 import "../../styles/timeinout.css";
 
@@ -17,11 +18,24 @@ const TimeInOut = () => {
   const [serverDate, setServerDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [busyAction, setBusyAction] = useState("");
+  const [network, setNetwork] = useState(null);
   const [checking, setChecking] = useState(true);
   const [now, setNow] = useState(new Date());
 
+  // Is this device on the shop network? (only matters when the admin
+  // turned the restriction on)
+  const fetchNetworkStatus = async () => {
+    try {
+      const res = await api.get("/settings/network/status");
+      setNetwork(res.data);
+    } catch {
+      setNetwork(null);
+    }
+  };
+
   useEffect(() => {
     fetchTodayAttendance();
+    fetchNetworkStatus();
 
     const timer = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(timer);
@@ -55,6 +69,8 @@ const TimeInOut = () => {
       });
       setAttendance(res.data.attendance);
     } catch (err) {
+      if (err.response?.data?.code === "OUTSIDE_SHOP_NETWORK") fetchNetworkStatus();
+
       setMessage({
         type: "error",
         text: err.response?.data?.message || "Time in failed",
@@ -75,6 +91,8 @@ const TimeInOut = () => {
       setMessage({ type: "success", text: res.data.message });
       setAttendance(res.data.attendance);
     } catch (err) {
+      if (err.response?.data?.code === "OUTSIDE_SHOP_NETWORK") fetchNetworkStatus();
+
       setMessage({
         type: "error",
         text: err.response?.data?.message || "Time out failed",
@@ -85,6 +103,7 @@ const TimeInOut = () => {
     }
   };
 
+  const offNetwork = Boolean(network?.restricted && !network?.allowed);
   const hasTimedIn = Boolean(attendance?.timeIn);
   const hasTimedOut = Boolean(attendance?.timeOut);
 
@@ -117,11 +136,31 @@ const TimeInOut = () => {
       </div>
 
       <div className="time-card">
+        {offNetwork && (
+          <div className="lp-alert warning network-banner">
+            <Icon name="wifiOff" size={18} />
+            <div>
+              <strong>You're not connected to the shop Wi-Fi.</strong> Time In and Time
+              Out only work on the shop network. Connect to the shop Wi-Fi, then{" "}
+              <button type="button" className="link-btn" onClick={fetchNetworkStatus}>
+                check again
+              </button>
+              . You can still view your records from anywhere.
+            </div>
+          </div>
+        )}
+
+        {network?.restricted && network?.allowed && (
+          <span className="network-ok">
+            <Icon name="wifi" size={14} /> Connected to the shop network
+          </span>
+        )}
+
         <div className="time-actions">
           <button
             className="time-in-btn"
             onClick={handleTimeIn}
-            disabled={loading || checking || hasTimedIn}
+            disabled={loading || checking || hasTimedIn || offNetwork}
             aria-busy={busyAction === "in"}
           >
             {busyAction === "in" && <Spinner />}
@@ -131,7 +170,7 @@ const TimeInOut = () => {
           <button
             className="time-out-btn"
             onClick={handleTimeOut}
-            disabled={loading || checking || !hasTimedIn || hasTimedOut}
+            disabled={loading || checking || !hasTimedIn || hasTimedOut || offNetwork}
             aria-busy={busyAction === "out"}
           >
             {busyAction === "out" && <Spinner />}

@@ -13,9 +13,22 @@ const payslipRoutes = require("./routes/payslipRoutes");
 const correctionRoutes = require("./routes/correctionRoutes");
 const cashAdvanceRoutes = require("./routes/cashAdvanceRoutes");
 const auditLogRoutes = require("./routes/auditLogRoutes");
+const settingsRoutes = require("./routes/settingsRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 
 const app = express();
+
+// Which client IP to trust (used by the shop network restriction).
+// - Not set (default): use the direct connection's address. Correct when
+//   the backend runs on a shop computer or is reached directly.
+// - Hosted behind a proxy (Render, Railway, Nginx): set TRUST_PROXY=1 so
+//   the real visitor IP from the proxy is used.
+// Never trust X-Forwarded-For blindly: anyone could fake the shop's IP.
+if (process.env.TRUST_PROXY) {
+  const value = process.env.TRUST_PROXY;
+  app.set("trust proxy", /^\d+$/.test(value) ? Number(value) : value);
+}
 
 app.use(cors());
 app.use(express.json());
@@ -37,6 +50,8 @@ app.use("/api/payslips", payslipRoutes);
 app.use("/api/corrections", correctionRoutes);
 app.use("/api/cash-advances", cashAdvanceRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 

@@ -7,6 +7,7 @@ const { isIncomplete, roundMoney } = require("../utils/attendanceRules");
 const { getBalances } = require("../utils/cashAdvanceUtils");
 const { isValidDate, getToday } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
+const { notifyUser, peso } = require("../utils/notify");
 
 // Validates the payroll request and returns an error message or null
 const validateRequest = ({ startDate, endDate, employeeIds }) => {
@@ -309,6 +310,19 @@ exports.generatePayroll = async (req, res) => {
         skipped: skipped.map((item) => item.employeeName),
       },
     });
+
+    // Tell each paid employee their payslip is ready
+    await Promise.all(
+      payrollEmployees.map((emp) =>
+        notifyUser(emp.employee, {
+          type: "payslip_ready",
+          level: "success",
+          title: "Your payslip is ready",
+          message: `Payroll ${startDate} to ${endDate}: net pay ${peso(emp.netSalary)}.`,
+          link: `/client/payslips/${payrollReport._id}`,
+        })
+      )
+    );
 
     res.status(201).json({
       message: "Payroll report generated successfully",

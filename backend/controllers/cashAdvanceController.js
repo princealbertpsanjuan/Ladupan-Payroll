@@ -5,6 +5,7 @@ const { getBalances, getBalance } = require("../utils/cashAdvanceUtils");
 const { roundMoney } = require("../utils/attendanceRules");
 const { getToday, isValidDate } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
+const { notifyUser, peso } = require("../utils/notify");
 
 // ADMIN: EVERY EMPLOYEE WITH THEIR CASH ADVANCE TOTALS
 exports.getCashAdvanceSummary = async (req, res) => {
@@ -119,6 +120,14 @@ exports.createCashAdvance = async (req, res) => {
         note: entry.note,
         newBalance: balance.balance,
       },
+    });
+
+    await notifyUser(employee._id, {
+      type: "cash_advance",
+      level: "info",
+      title: `Cash advance of ${peso(value)} recorded`,
+      message: `Your unpaid balance is now ${peso(balance.balance)}. It will be deducted through payroll.`,
+      link: "/client/payslips",
     });
 
     res.status(201).json({
