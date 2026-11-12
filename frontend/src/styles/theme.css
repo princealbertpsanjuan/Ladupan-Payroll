@@ -1970,3 +1970,16 @@ tbody tr.group-row {
 .lp-badge.no-caps {
   text-transform: none;
 }
+
+.deleted-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  vertical-align: middle;
+}
