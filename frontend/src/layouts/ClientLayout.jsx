@@ -1,44 +1,15 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import logo from "../assets/ladupan-logo.png";
-import "../styles/layout.css";
+import AppShell from "../components/AppShell";
 
-const ClientLayout = ({ children }) => {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+const CLIENT_NAV = [
+  { to: "/client/dashboard", label: "Dashboard", icon: "dashboard" },
+  { to: "/client/time", label: "Time In / Out", icon: "clock" },
+  { to: "/client/records", label: "My Records", icon: "records" },
+  { to: "/client/corrections", label: "DTR Corrections", icon: "edit" },
+  { to: "/client/payslips", label: "My Payslips", icon: "receipt" },
+  { to: "/client/archives", label: "My Archives", icon: "archive" },
+  { to: "/client/account", label: "My Account", icon: "user" },
+];
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  return (
-    <div className="layout">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src={logo} alt="Ladupan Logo" className="sidebar-logo" />
-          <h2>Ladupan</h2>
-          <p>Employee Portal</p>
-        </div>
-
-        <nav>
-          <NavLink to="/client/dashboard">Dashboard</NavLink>
-          <NavLink to="/client/time">Time In / Out</NavLink>
-          <NavLink to="/client/records">My Records</NavLink>
-          <NavLink to="/client/corrections">DTR Corrections</NavLink>
-          <NavLink to="/client/payslips">My Payslips</NavLink>
-          <NavLink to="/client/archives">My Archives</NavLink>
-          <NavLink to="/client/account">My Account</NavLink>
-        </nav>
-
-        <button className="logout-btn" onClick={handleLogout}>
-          Logout
-        </button>
-      </aside>
-
-      <main className="main-content">{children}</main>
-    </div>
-  );
-};
+const ClientLayout = () => <AppShell navItems={CLIENT_NAV} subtitle="Employee Portal" />;
 
 export default ClientLayout;

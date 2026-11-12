@@ -51,6 +51,25 @@ exports.getAdminDashboard = async (req, res) => {
 
     const latestPayroll = latestPayrolls[0];
 
+    // Money totals of the most recent payroll report (real data only)
+    let latestPayrollTotals = null;
+
+    if (latestPayroll) {
+      const sum = (field) =>
+        latestPayroll.employees.reduce((total, emp) => total + (emp[field] || 0), 0);
+
+      latestPayrollTotals = {
+        reportId: latestPayroll._id,
+        period: `${latestPayroll.payrollPeriodStart} to ${latestPayroll.payrollPeriodEnd}`,
+        totalEmployees: latestPayroll.totalEmployees || latestPayroll.employees.length,
+        grossPay: roundMoney(latestPayroll.totalGross || sum("grossSalary")),
+        deductions: roundMoney(
+          sum("lateDeductions") + sum("cashAdvance") + sum("otherDeductions")
+        ),
+        netPay: roundMoney(latestPayroll.totalNet || sum("netSalary")),
+      };
+    }
+
     let recentPayrollActivity = {
       lastPayrollPeriod: "Not generated yet",
       processedEmployees: 0,
@@ -76,6 +95,7 @@ exports.getAdminDashboard = async (req, res) => {
       pendingCorrections,
       timedInToday,
       outstandingCashAdvances,
+      latestPayrollTotals,
       recentPayrollActivity,
       latestPayrolls: latestPayrolls.map((report) => ({
         _id: report._id,
@@ -123,6 +143,10 @@ exports.getEmployeeDashboard = async (req, res) => {
       latestPayslip = {
         reportId: latestReport._id,
         period: `${latestReport.payrollPeriodStart} to ${latestReport.payrollPeriodEnd}`,
+        grossSalary: entry?.grossSalary || 0,
+        totalDeductions: roundMoney(
+          (entry?.lateDeductions || 0) + (entry?.cashAdvance || 0) + (entry?.otherDeductions || 0)
+        ),
         netSalary: entry?.netSalary || 0,
       };
     }

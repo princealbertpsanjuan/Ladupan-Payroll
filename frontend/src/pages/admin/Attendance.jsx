@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
+import { SkeletonRows } from "../../components/Skeleton";
+import Spinner from "../../components/Spinner";
+import SortableTh from "../../components/SortableTh";
+import useSort from "../../hooks/useSort";
+import useFlipList from "../../hooks/useFlipList";
 import StatusBadge from "../../components/StatusBadge";
 import {
   formatMoney,
@@ -18,12 +24,26 @@ const emptyForm = {
   timeOut: "",
 };
 
+const SORT_ACCESSORS = {
+  employee: (record) => getEmployeeName(record.employee).toLowerCase(),
+  date: (record) => formatDate(record.date),
+  timeIn: (record) => record.timeIn || "",
+  totalHours: (record) => Number(record.totalHours || 0),
+  grossPay: (record) => Number(record.grossPay || 0),
+  late: (record) => Number(record.lateMinutes || 0),
+  remarks: (record) => (isIncompleteRecord(record) ? "Incomplete" : record.remarks || ""),
+};
+
 const Attendance = () => {
   const [searchParams] = useSearchParams();
+  const toast = useToast();
+  const tbodyRef = useRef(null);
 
   const [records, setRecords] = useState([]);
   const [employees, setEmployees] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
 
   const [showModal, setShowModal] = useState(false);
   const [editingRecord, setEditingRecord] = useState(null);
@@ -31,7 +51,6 @@ const Attendance = () => {
   const [formData, setFormData] = useState(emptyForm);
   const [formError, setFormError] = useState("");
   const [deleteError, setDeleteError] = useState("");
-  const [message, setMessage] = useState("");
 
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState(
@@ -112,30 +131,37 @@ const Attendance = () => {
     };
 
     try {
+      setSaving(true);
+
       if (editingRecord) {
         await api.put(`/attendance/${editingRecord._id}`, payload);
-        setMessage("Attendance record updated.");
+        toast.success("Attendance record updated.");
       } else {
         await api.post("/attendance", payload);
-        setMessage("Attendance record added.");
+        toast.success("Attendance record added.");
       }
 
       closeModal();
       fetchAttendance();
     } catch (err) {
       setFormError(err.response?.data?.message || "Failed to save attendance record.");
+    } finally {
+      setSaving(false);
     }
   };
 
   const confirmDelete = async () => {
     try {
+      setDeleting(true);
       await api.delete(`/attendance/${deleteRecord._id}`);
       setDeleteRecord(null);
       setDeleteError("");
-      setMessage("Attendance record deleted.");
+      toast.success("Attendance record deleted.");
       fetchAttendance();
     } catch (err) {
       setDeleteError(err.response?.data?.message || "Failed to delete attendance record.");
+    } finally {
+      setDeleting(false);
     }
   };
 
@@ -157,6 +183,13 @@ const Attendance = () => {
 
     return matchesSearch && matchesStatus && matchesDate;
   });
+
+  const { sortedRows, sort, toggleSort } = useSort(filteredRecords, SORT_ACCESSORS);
+
+  useFlipList(
+    tbodyRef,
+    `${sort.key}-${sort.direction}-${search}-${statusFilter}-${dateFilter}`
+  );
 
   return (
     <div className="attendance-page">
@@ -183,8 +216,6 @@ const Attendance = () => {
           </button>
         </div>
       )}
-
-      {message && <div className="lp-alert success">{message}</div>}
 
       <div className="attendance-card">
         <div className="lp-toolbar">
@@ -227,41 +258,39 @@ const Attendance = () => {
         <table>
           <thead>
             <tr>
-              <th>Employee</th>
-              <th>Date</th>
-              <th>Required In</th>
-              <th>Time In</th>
+              <SortableTh label="Employee" column="employee" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Date" column="date" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Time In" column="timeIn" sort={sort} onSort={toggleSort} />
               <th>Time Out</th>
-              <th>Total Hours</th>
-              <th>Hourly Rate</th>
-              <th>Gross Pay</th>
-              <th>Late</th>
-              <th>Remarks</th>
+              <SortableTh label="Total Hours" column="totalHours" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Gross Pay" column="grossPay" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Late" column="late" sort={sort} onSort={toggleSort} />
+              <SortableTh label="Remarks" column="remarks" sort={sort} onSort={toggleSort} />
               <th>Action</th>
             </tr>
           </thead>
 
-          <tbody>
+          <tbody ref={tbodyRef}>
             {loading && records.length === 0 ? (
-              <tr>
-                <td colSpan="11" className="empty-text">
-                  Loading attendance records...
-                </td>
-              </tr>
-            ) : filteredRecords.length > 0 ? (
-              filteredRecords.map((record) => (
-                <tr key={record._id}>
+              <SkeletonRows rows={6} cols={9} />
+            ) : sortedRows.length > 0 ? (
+              sortedRows.map((record) => (
+                <tr key={record._id} data-key={record._id}>
                   <td>
                     {getEmployeeName(record.employee)}
                     <div className="lp-muted">{record.employee?.employeeId}</div>
                   </td>
                   <td>{formatDate(record.date)}</td>
-                  <td>{record.requiredTimeIn || "-"}</td>
-                  <td>{record.timeIn || "-"}</td>
+                  <td>
+                    {record.timeIn || "-"}
+                    <div className="lp-muted">Required {record.requiredTimeIn || "-"}</div>
+                  </td>
                   <td>{record.timeOut || "-"}</td>
                   <td>{record.totalHours || 0}</td>
-                  <td>{formatMoney(record.hourlyRate)}</td>
-                  <td>{formatMoney(record.grossPay)}</td>
+                  <td>
+                    {formatMoney(record.grossPay)}
+                    <div className="lp-muted">@ {formatMoney(record.hourlyRate)}/hr</div>
+                  </td>
                   <td>{formatMinutes(record.lateMinutes)}</td>
                   <td>
                     <StatusBadge record={record} />
@@ -285,7 +314,7 @@ const Attendance = () => {
               ))
             ) : (
               <tr>
-                <td colSpan="11" className="empty-text">
+                <td colSpan="9" className="empty-text">
                   No attendance records found.
                 </td>
               </tr>
@@ -363,8 +392,9 @@ const Attendance = () => {
                   Cancel
                 </button>
 
-                <button type="submit" className="save-btn">
-                  {editingRecord ? "Update" : "Save"}
+                <button type="submit" className="save-btn" disabled={saving} aria-busy={saving}>
+                  {saving && <Spinner />}
+                  {saving ? "Saving..." : editingRecord ? "Update" : "Save"}
                 </button>
               </div>
             </form>
@@ -391,8 +421,14 @@ const Attendance = () => {
                 Cancel
               </button>
 
-              <button className="delete-confirm-btn" onClick={confirmDelete}>
-                Delete
+              <button
+                className="delete-confirm-btn"
+                onClick={confirmDelete}
+                disabled={deleting}
+                aria-busy={deleting}
+              >
+                {deleting && <Spinner />}
+                {deleting ? "Deleting..." : "Delete"}
               </button>
             </div>
           </div>

@@ -1,13 +1,16 @@
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
 import { formatMoney, formatLongDate } from "../../utils/format";
+import { SkeletonRows } from "../../components/Skeleton";
+import Icon from "../../components/Icon";
 
 const MyPayslips = () => {
   const [payslips, setPayslips] = useState([]);
   const [cashAdvance, setCashAdvance] = useState(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
+  const [expandedId, setExpandedId] = useState(null);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -70,14 +73,14 @@ const MyPayslips = () => {
 
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="lp-empty">
-                    Loading payslips...
-                  </td>
-                </tr>
+                <SkeletonRows rows={6} cols={7} />
               ) : filteredPayslips.length > 0 ? (
-                filteredPayslips.map((payslip) => (
-                  <tr key={payslip.reportId}>
+                filteredPayslips.map((payslip) => {
+                  const expanded = expandedId === payslip.reportId;
+
+                  return (
+                  <Fragment key={payslip.reportId}>
+                  <tr className={expanded ? "is-expanded" : ""}>
                     <td>
                       {payslip.payrollPeriodStart} to {payslip.payrollPeriodEnd}
                     </td>
@@ -89,15 +92,53 @@ const MyPayslips = () => {
                       <strong>{formatMoney(payslip.netSalary)}</strong>
                     </td>
                     <td>
-                      <Link
-                        className="lp-btn small"
-                        to={`/client/payslips/${payslip.reportId}`}
-                      >
-                        View Payslip
-                      </Link>
+                      <div className="lp-btn-row">
+                        <button
+                          type="button"
+                          className="lp-btn secondary small"
+                          aria-expanded={expanded}
+                          onClick={() => setExpandedId(expanded ? null : payslip.reportId)}
+                        >
+                          Preview
+                          <Icon name="chevronDown" size={14} className="preview-chevron" />
+                        </button>
+                        <Link
+                          className="lp-btn small"
+                          to={`/client/payslips/${payslip.reportId}`}
+                        >
+                          View Payslip
+                        </Link>
+                      </div>
                     </td>
                   </tr>
-                ))
+
+                  {expanded && (
+                    <tr className="payslip-preview-row">
+                      <td colSpan="7">
+                        <div className="payslip-preview">
+                          <div>
+                            <span>Hours worked</span>
+                            <strong>{payslip.totalHours}</strong>
+                          </div>
+                          <div>
+                            <span>Gross pay</span>
+                            <strong>{formatMoney(payslip.grossSalary)}</strong>
+                          </div>
+                          <div>
+                            <span>Deductions</span>
+                            <strong>− {formatMoney(payslip.totalDeductions)}</strong>
+                          </div>
+                          <div className="is-net">
+                            <span>Net pay</span>
+                            <strong>{formatMoney(payslip.netSalary)}</strong>
+                          </div>
+                        </div>
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
+                  );
+                })
               ) : (
                 <tr>
                   <td colSpan="7" className="lp-empty">

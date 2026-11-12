@@ -1,0 +1,1566 @@
+/* ==========================================================================
+   LADUPAN THEME
+   One cohesive black-and-white look on top of the page stylesheets.
+   Imported last (from App.jsx) so it wins over page CSS.
+   ========================================================================== */
+
+:root {
+  /* Type */
+  --font-sans: "Inter", ui-sans-serif, system-ui, -apple-system, "Segoe UI",
+    Roboto, "Helvetica Neue", Arial, sans-serif;
+
+  /* Brand + neutrals (warm stone greys pair well with pure black) */
+  --brand: #0a0a0a;
+  --brand-soft: #1c1c1c;
+  --bg: #f5f5f4;
+  --surface: #ffffff;
+  --surface-2: #fafaf9;
+  --surface-3: #f2f2f0;
+  --border: #e7e5e4;
+  --border-strong: #d6d3d1;
+  --text: #0c0a09;
+  --text-2: #57534e;
+  --text-3: #8a8480;
+
+  /* Status */
+  --success: #15803d;
+  --success-bg: #ecfdf3;
+  --success-border: #bbf7d0;
+  --warning: #b45309;
+  --warning-bg: #fffbeb;
+  --warning-border: #fde68a;
+  --danger: #c81e1e;
+  --danger-bg: #fef2f2;
+  --danger-border: #fecaca;
+  --info: #3730a3;
+  --info-bg: #eef2ff;
+
+  /* Shape */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 14px;
+  --radius-xl: 18px;
+
+  /* Elevation */
+  --shadow-xs: 0 1px 2px rgba(12, 10, 9, 0.05);
+  --shadow-sm: 0 1px 2px rgba(12, 10, 9, 0.04), 0 2px 8px -2px rgba(12, 10, 9, 0.06);
+  --shadow-md: 0 2px 4px rgba(12, 10, 9, 0.04), 0 8px 24px -6px rgba(12, 10, 9, 0.12);
+  --shadow-lg: 0 24px 48px -12px rgba(12, 10, 9, 0.28);
+
+  /* Spacing scale */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+
+  --row-hover: rgba(12, 10, 9, 0.03);
+  --skeleton-base: #ecebe9;
+  --focus-ring: 0 0 0 3px rgba(10, 10, 10, 0.12);
+}
+
+/* --------------------------------------------------------------------------
+   Base
+   -------------------------------------------------------------------------- */
+
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+}
+
+::selection {
+  background: rgba(10, 10, 10, 0.12);
+}
+
+/* Money and counts line up in tables and cards */
+table,
+.lp-stat strong,
+.overview-card strong,
+.client-overview-card strong,
+.lp-details strong,
+.report-summary strong,
+.attendance-info-card strong,
+.payslip-sheet,
+.lp-total strong {
+  font-variant-numeric: tabular-nums;
+}
+
+/* --------------------------------------------------------------------------
+   Page wrappers and headers
+   -------------------------------------------------------------------------- */
+
+.client-dashboard-page,
+.admin-page {
+  padding: 0;
+  background: transparent;
+  min-height: 0;
+}
+
+:is(
+    .employees-header,
+    .attendance-header,
+    .payroll-header,
+    .reports-header,
+    .archives-header,
+    .myrecords-header,
+    .myarchives-header,
+    .myaccount-header,
+    .lp-header
+  ) {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  margin-bottom: var(--space-6);
+}
+
+:is(
+    .employees-header,
+    .attendance-header,
+    .payroll-header,
+    .reports-header,
+    .archives-header,
+    .myrecords-header,
+    .myarchives-header,
+    .myaccount-header,
+    .lp-header,
+    .dashboard-hero,
+    .client-welcome-card
+  )
+  h1 {
+  font-size: 26px;
+  line-height: 1.2;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  color: var(--text);
+  margin-bottom: 6px;
+}
+
+:is(
+    .employees-header,
+    .attendance-header,
+    .payroll-header,
+    .reports-header,
+    .archives-header,
+    .myrecords-header,
+    .myarchives-header,
+    .myaccount-header,
+    .lp-header,
+    .dashboard-hero,
+    .client-welcome-card
+  )
+  p {
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.section-title,
+.client-section-title,
+.settings-title {
+  font-size: 13px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--text-3);
+  margin: var(--space-8) 0 var(--space-3);
+}
+
+/* --------------------------------------------------------------------------
+   Surfaces (cards)
+   -------------------------------------------------------------------------- */
+
+:is(
+    .lp-card,
+    .employee-table-card,
+    .attendance-card,
+    .payroll-card,
+    .reports-card,
+    .archives-card,
+    .myrecords-card,
+    .myarchives-card,
+    .myaccount-card,
+    .time-card,
+    .dashboard-hero,
+    .client-welcome-card,
+    .activity-card,
+    .overview-card,
+    .client-overview-card,
+    .quick-card,
+    .client-quick-card,
+    .lp-stat
+  ) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+:is(
+    .lp-card,
+    .employee-table-card,
+    .attendance-card,
+    .payroll-card,
+    .reports-card,
+    .archives-card,
+    .myrecords-card,
+    .myarchives-card,
+    .myaccount-card,
+    .time-card,
+    .activity-card
+  ) {
+  padding: var(--space-6);
+  margin-bottom: var(--space-5);
+}
+
+.dashboard-hero,
+.client-welcome-card {
+  padding: var(--space-6) 28px;
+  margin-bottom: var(--space-2);
+  align-items: center;
+}
+
+.dashboard-date,
+.client-welcome-card > span {
+  color: var(--text-2);
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  white-space: nowrap;
+}
+
+.lp-card h2,
+.activity-card h2,
+.report-card h2 {
+  font-size: 17px;
+  font-weight: 650;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+
+.lp-card-subtitle {
+  color: var(--text-2);
+}
+
+/* Quick access cards */
+.quick-grid,
+.client-quick-grid {
+  gap: var(--space-4);
+}
+
+.quick-card,
+.client-quick-card {
+  min-height: 0;
+  padding: var(--space-5);
+  gap: 4px;
+  color: var(--text);
+  transition: transform var(--dur-standard) var(--ease-standard);
+  isolation: isolate;
+}
+
+/* Hover shadow lives on a layer so only its opacity animates */
+.quick-card::after,
+.client-quick-card::after,
+a.lp-stat::after {
+  content: "";
+  position: absolute;
+  inset: -1px;
+  border-radius: inherit;
+  box-shadow: var(--shadow-md);
+  opacity: 0;
+  z-index: -1;
+  transition: opacity var(--dur-standard) var(--ease-standard);
+  pointer-events: none;
+}
+
+.quick-card,
+.client-quick-card,
+a.lp-stat {
+  position: relative;
+}
+
+.quick-card:hover,
+.client-quick-card:hover,
+a.lp-stat:hover {
+  transform: translateY(-2px);
+}
+
+.quick-card:hover::after,
+.client-quick-card:hover::after,
+a.lp-stat:hover::after {
+  opacity: 1;
+}
+
+.quick-card:active,
+.client-quick-card:active,
+a.lp-stat:active {
+  transform: translateY(0) scale(0.99);
+  transition-duration: var(--dur-micro);
+}
+
+.quick-card h3,
+.client-quick-card h3 {
+  font-size: 15px;
+  font-weight: 650;
+  margin: var(--space-4) 0 4px;
+}
+
+.quick-card p,
+.client-quick-card p {
+  font-size: 13px;
+  color: var(--text-2);
+  line-height: 1.5;
+}
+
+.quick-card > span:last-child,
+.client-quick-card > span:last-child {
+  align-self: flex-end;
+  color: var(--text-3);
+  font-size: 18px;
+  line-height: 1;
+  margin-top: var(--space-3);
+  transition: transform var(--dur-standard) var(--ease-standard);
+}
+
+.quick-card:hover > span:last-child,
+.client-quick-card:hover > span:last-child {
+  transform: translateX(3px);
+  color: var(--text);
+}
+
+/* Icon tiles */
+:is(.card-icon, .overview-icon, .client-icon) {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-md);
+  display: grid;
+  place-items: center;
+  flex-shrink: 0;
+  font-size: 18px;
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+:is(.card-icon, .overview-icon, .client-icon) svg {
+  width: 20px;
+  height: 20px;
+}
+
+:is(.card-icon, .overview-icon, .client-icon).purple { background: #f1edfd; color: #5b3fc4; }
+:is(.card-icon, .overview-icon, .client-icon).green { background: #eaf7ef; color: #177a43; }
+:is(.card-icon, .overview-icon, .client-icon).orange { background: #fdf1e3; color: #a85b0e; }
+:is(.card-icon, .overview-icon, .client-icon).blue { background: #ebf1fd; color: #2f5bb7; }
+:is(.card-icon, .overview-icon, .client-icon).red { background: #fdecef; color: #b4234a; }
+:is(.card-icon, .overview-icon, .client-icon).dark { background: var(--brand); color: #fff; }
+
+/* Overview cards */
+.overview-grid,
+.client-overview-grid {
+  gap: var(--space-4);
+}
+
+.overview-card,
+.client-overview-card {
+  padding: var(--space-5);
+  gap: var(--space-4);
+  align-items: flex-start;
+}
+
+.overview-card h3,
+.client-overview-card h4 {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 4px;
+}
+
+.overview-card strong,
+.client-overview-card strong {
+  display: block;
+  font-size: 26px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+  line-height: 1.2;
+  color: var(--text);
+}
+
+.overview-card p,
+.client-overview-card p {
+  font-size: 12px;
+  color: var(--text-3);
+  margin-top: 4px;
+}
+
+/* Stat tiles */
+.lp-stat-grid {
+  gap: var(--space-4);
+}
+
+.lp-stat {
+  padding: var(--space-5);
+  border-left: 1px solid var(--border);
+}
+
+.lp-stat span {
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.lp-stat strong {
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.lp-stat.attention {
+  border-color: var(--warning-border);
+  background: linear-gradient(0deg, var(--warning-bg), var(--warning-bg)), var(--surface);
+}
+
+.lp-stat.attention strong {
+  color: var(--warning);
+}
+
+/* Activity */
+.activity-card {
+  margin-top: var(--space-6);
+}
+
+.activity-grid div {
+  border-color: var(--border) !important;
+}
+
+.activity-grid span {
+  color: var(--text-3);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* --------------------------------------------------------------------------
+   Buttons
+   -------------------------------------------------------------------------- */
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ) {
+  position: relative;
+  isolation: isolate;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: var(--radius-md);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  font-weight: 600;
+  line-height: 1;
+  letter-spacing: -0.005em;
+  white-space: nowrap;
+  text-decoration: none;
+  cursor: pointer;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform var(--dur-micro) var(--ease-standard),
+    opacity var(--dur-micro) var(--ease-standard);
+}
+
+/* Tint layer: hover darkens/lightens via opacity only */
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  )::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: currentColor;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--dur-micro) var(--ease-standard);
+}
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ):hover:not(:disabled) {
+  transform: translateY(-1px);
+}
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ):hover:not(:disabled)::after {
+  opacity: 0.08;
+}
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ):active:not(:disabled) {
+  transform: translateY(0) scale(0.97);
+}
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ):active:not(:disabled)::after {
+  opacity: 0.14;
+}
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ):disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  transform: none;
+}
+
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .cancel-btn,
+    .edit-btn,
+    .delete-btn,
+    .delete-confirm-btn,
+    .confirm-delete-btn,
+    .create-open-btn,
+    .search-btn,
+    .reset-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .close-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .time-out-btn,
+    .setting-row button,
+    .login-card button,
+    .lp-tab
+  ):focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+/* A busy button keeps its size and shows the spinner */
+[aria-busy="true"] {
+  cursor: progress !important;
+}
+
+/* Primary (black) */
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .create-open-btn,
+    .search-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .setting-row button,
+    .login-card button
+  ),
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .create-open-btn,
+    .search-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .setting-row button,
+    .login-card button
+  ):hover,
+:is(
+    .lp-btn,
+    .add-btn,
+    .save-btn,
+    .create-open-btn,
+    .search-btn,
+    .select-all-btn,
+    .generate-btn,
+    .view-report-btn,
+    .latest-btn,
+    .time-in-btn,
+    .setting-row button,
+    .login-card button
+  ):disabled {
+  background: var(--brand);
+  color: #ffffff;
+  border: 1px solid var(--brand);
+  box-shadow: var(--shadow-xs);
+}
+
+/* Secondary (outlined) */
+:is(.lp-btn.secondary, .cancel-btn, .reset-btn, .edit-btn, .close-report-btn, .time-out-btn),
+:is(.lp-btn.secondary, .cancel-btn, .reset-btn, .edit-btn, .close-report-btn, .time-out-btn):hover,
+:is(.lp-btn.secondary, .cancel-btn, .reset-btn, .edit-btn, .close-report-btn, .time-out-btn):disabled {
+  background: var(--surface);
+  color: var(--text);
+  border: 1px solid var(--border-strong);
+  box-shadow: var(--shadow-xs);
+}
+
+.time-out-btn,
+.time-out-btn:hover,
+.time-out-btn:disabled {
+  border-color: var(--brand);
+}
+
+/* Danger */
+:is(.lp-btn.danger, .delete-confirm-btn, .confirm-delete-btn),
+:is(.lp-btn.danger, .delete-confirm-btn, .confirm-delete-btn):hover,
+:is(.lp-btn.danger, .delete-confirm-btn, .confirm-delete-btn):disabled {
+  background: var(--danger);
+  color: #fff;
+  border: 1px solid var(--danger);
+}
+
+/* Soft danger for in-table delete */
+.delete-btn,
+.delete-btn:hover {
+  background: var(--danger-bg);
+  color: var(--danger);
+  border: 1px solid var(--danger-border);
+}
+
+/* Success */
+.lp-btn.success,
+.lp-btn.success:hover,
+.lp-btn.success:disabled {
+  background: var(--success);
+  color: #fff;
+  border: 1px solid var(--success);
+}
+
+/* Small buttons (in tables and cards) */
+:is(.lp-btn.small, .edit-btn, .delete-btn, .view-report-btn) {
+  min-height: 32px;
+  padding: 0 12px;
+  font-size: 13px;
+  border-radius: var(--radius-sm);
+}
+
+.action-buttons {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+/* Big call-to-action buttons */
+.generate-btn,
+.time-in-btn,
+.time-out-btn {
+  min-height: 44px;
+  padding: 0 22px;
+  font-size: 15px;
+}
+
+.generate-btn {
+  margin-top: var(--space-5);
+}
+
+.login-card button {
+  min-height: 44px;
+  width: 100%;
+}
+
+/* Tabs */
+.lp-tab,
+.lp-tab:hover {
+  min-height: 36px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text-2);
+  border: 1px solid var(--border);
+}
+
+.lp-tab.active,
+.lp-tab.active:hover {
+  background: var(--brand);
+  color: #fff;
+  border-color: var(--brand);
+}
+
+/* Icon-only close buttons */
+:is(.modal-close, .lp-modal-close) {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: var(--radius-sm);
+  border: none;
+  background: transparent;
+  color: var(--text-2);
+  font-size: 22px;
+  line-height: 1;
+  cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-standard);
+}
+
+:is(.modal-close, .lp-modal-close):hover {
+  background: var(--surface-3);
+  color: var(--text);
+}
+
+:is(.modal-close, .lp-modal-close):active {
+  transform: scale(0.94);
+}
+
+/* --------------------------------------------------------------------------
+   Inputs
+   -------------------------------------------------------------------------- */
+
+:is(
+    .lp-toolbar,
+    .employee-toolbar,
+    .reports-tools,
+    .archives-tools,
+    .myrecords-tools,
+    .myarchives-tools
+  ) {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  margin-bottom: var(--space-4);
+}
+
+:is(
+    .lp-toolbar,
+    .employee-toolbar,
+    .reports-tools,
+    .archives-tools,
+    .myrecords-tools,
+    .myarchives-tools,
+    .lp-field,
+    .form-group,
+    .modal-box,
+    .employee-form,
+    .login-card
+  )
+  :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea),
+.lp-table input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  background: var(--surface);
+  color: var(--text);
+  font-family: var(--font-sans);
+  font-size: 14px;
+  box-shadow: var(--shadow-xs);
+}
+
+:is(.lp-field, .modal-box, .employee-form) textarea {
+  padding: 10px 12px;
+}
+
+.lp-table input {
+  min-height: 34px;
+  padding: 0 10px;
+}
+
+.login-card input:not([type="checkbox"]) {
+  min-height: 44px;
+}
+
+:is(input, select, textarea):focus-visible,
+:is(input, select, textarea):focus {
+  outline: none;
+  border-color: var(--brand) !important;
+  box-shadow: var(--focus-ring) !important;
+}
+
+:is(input, select, textarea):disabled {
+  background: var(--surface-3);
+  color: var(--text-2);
+  cursor: not-allowed;
+}
+
+::placeholder {
+  color: var(--text-3);
+  opacity: 1;
+}
+
+/* Invalid fields (after the user has tried to submit) */
+.lp-invalid,
+:is(input, select, textarea):user-invalid {
+  border-color: var(--danger) !important;
+  box-shadow: 0 0 0 3px rgba(200, 30, 30, 0.1) !important;
+}
+
+label,
+.lp-field label,
+.form-group label,
+.modal-box label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+input[type="checkbox"] {
+  accent-color: var(--brand);
+}
+
+/* --------------------------------------------------------------------------
+   Tables
+   -------------------------------------------------------------------------- */
+
+table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  background: transparent;
+}
+
+thead th,
+table th {
+  background: var(--surface-2);
+  color: var(--text-3);
+  font-size: 12px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  text-align: left;
+  padding: 11px 14px;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+
+thead th:first-child {
+  border-top-left-radius: var(--radius-md);
+}
+
+thead th:last-child {
+  border-top-right-radius: var(--radius-md);
+}
+
+table td {
+  padding: 13px 14px;
+  font-size: 14px;
+  color: var(--text);
+  border-bottom: 1px solid var(--border);
+  vertical-align: middle;
+  background: transparent;
+}
+
+tbody tr:last-child td {
+  border-bottom: none;
+}
+
+/* Hover is handled by the tint layer in motion.css */
+table tr:hover,
+table tr:hover td,
+:is(.employee-table, .lp-table, .admin-table) tbody tr:hover td,
+:is(.employee-table, .lp-table, .admin-table) tr:hover {
+  background: transparent;
+}
+
+tfoot td {
+  background: var(--surface-2) !important;
+  font-weight: 650;
+}
+
+.employee-table-card,
+.attendance-card,
+.archives-card,
+.myrecords-card,
+.myarchives-card,
+.reports-card {
+  overflow-x: auto;
+}
+
+:is(.empty-row, .empty-text, .lp-empty) {
+  text-align: center;
+  padding: 36px 16px !important;
+  color: var(--text-3);
+  font-size: 14px;
+}
+
+:is(.table-footer, .attendance-footer, .archives-footer, .myrecords-footer, .myarchives-footer) {
+  margin-top: var(--space-3);
+  color: var(--text-3);
+  font-size: 13px;
+}
+
+.lp-muted {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+/* --------------------------------------------------------------------------
+   Status badges
+   -------------------------------------------------------------------------- */
+
+:is(.status, .lp-badge) {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  line-height: 1.5;
+  white-space: nowrap;
+  background: var(--surface-3);
+  color: var(--text-2);
+  text-transform: capitalize;
+}
+
+:is(.status, .lp-badge)::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  opacity: 0.85;
+}
+
+/* The old "● Active" text dot is replaced by the CSS dot */
+.status.active,
+.status.present,
+.lp-badge.approved,
+.lp-badge.advance {
+  background: var(--success-bg);
+  color: var(--success);
+}
+
+.status.late,
+.lp-badge.pending {
+  background: var(--warning-bg);
+  color: var(--warning);
+}
+
+.status.absent,
+.status.inactive,
+.lp-badge.rejected {
+  background: var(--danger-bg);
+  color: var(--danger);
+}
+
+.status.incomplete {
+  background: var(--surface);
+  color: var(--warning);
+  box-shadow: inset 0 0 0 1px var(--warning-border);
+}
+
+.lp-badge.deduction {
+  background: var(--info-bg);
+  color: var(--info);
+}
+
+/* --------------------------------------------------------------------------
+   Alerts
+   -------------------------------------------------------------------------- */
+
+.lp-alert {
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  font-size: 14px;
+}
+
+.lp-alert.info {
+  background: var(--surface-2);
+  border-color: var(--border);
+}
+
+.lp-alert.success {
+  background: var(--success-bg);
+  border-color: var(--success-border);
+  color: var(--success);
+}
+
+.lp-alert.warning {
+  background: var(--warning-bg);
+  border-color: var(--warning-border);
+  color: var(--warning);
+}
+
+.lp-alert.error {
+  background: var(--danger-bg);
+  border-color: var(--danger-border);
+  color: var(--danger);
+}
+
+/* --------------------------------------------------------------------------
+   Modals
+   -------------------------------------------------------------------------- */
+
+.modal-overlay,
+.lp-modal-overlay {
+  background: rgba(12, 10, 9, 0.42) !important;
+  z-index: 1000 !important;
+  padding: var(--space-4);
+}
+
+:is(.modal-box, .delete-box, .create-modal, .delete-modal, .report-modal, .lp-modal) {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl) !important;
+  box-shadow: var(--shadow-lg);
+  max-width: 100%;
+  max-height: calc(100vh - 32px);
+  overflow-y: auto;
+}
+
+:is(.modal-box, .delete-box, .create-modal, .delete-modal, .lp-modal) {
+  padding: var(--space-6) !important;
+}
+
+:is(.modal-header, .lp-modal-header, .report-modal-header) h2,
+:is(.modal-box, .delete-box, .delete-modal) > h2 {
+  font-size: 19px;
+  font-weight: 650;
+  letter-spacing: -0.015em;
+  color: var(--text);
+}
+
+:is(.modal-header, .lp-modal-header, .report-modal-header) p {
+  color: var(--text-2);
+  font-size: 13px;
+}
+
+:is(.modal-actions, .form-actions, .lp-modal-actions) {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: var(--space-5);
+  flex-wrap: wrap;
+}
+
+.warning-icon {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--danger-bg);
+  color: var(--danger);
+  font-size: 22px;
+}
+
+/* --------------------------------------------------------------------------
+   Detail tiles (reports, payslips, time in/out, account)
+   -------------------------------------------------------------------------- */
+
+:is(.lp-details div, .report-summary div, .attendance-info-card, .account-info-box) {
+  background: var(--surface-2);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  box-shadow: none;
+}
+
+:is(.lp-details span, .report-summary span, .attendance-info-card span, .account-info-box span) {
+  color: var(--text-3);
+  font-size: 12px;
+}
+
+/* Payroll employee picker */
+.employee-check-card {
+  border: 1px solid var(--border) !important;
+  border-radius: var(--radius-md) !important;
+  background: var(--surface) !important;
+  transition: transform var(--dur-micro) var(--ease-standard) !important;
+}
+
+.employee-check-card:hover {
+  transform: translateY(-1px);
+}
+
+.employee-check-card:has(input:checked) {
+  border-color: var(--brand) !important;
+  box-shadow: inset 0 0 0 1px var(--brand);
+}
+
+/* --------------------------------------------------------------------------
+   Login
+   -------------------------------------------------------------------------- */
+
+.login-page {
+  background:
+    radial-gradient(1200px 500px at 50% -10%, #ffffff 0%, transparent 70%),
+    var(--bg);
+  font-family: var(--font-sans);
+  padding: var(--space-4);
+}
+
+.login-card {
+  width: 400px;
+  max-width: 100%;
+  padding: 36px 32px;
+  border: 1px solid var(--border);
+  border-radius: var(--radius-xl);
+  box-shadow: var(--shadow-md);
+  animation: lp-pop-in var(--dur-page) var(--ease-out) backwards;
+}
+
+.login-logo {
+  width: 88px;
+  height: 88px;
+}
+
+.login-card h1 {
+  font-size: 22px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.login-card p {
+  color: var(--text-2);
+}
+
+.login-error {
+  display: block;
+  padding: 10px 12px;
+  border-radius: var(--radius-md);
+  background: var(--danger-bg);
+  border: 1px solid var(--danger-border);
+  color: var(--danger);
+  text-align: left;
+}
+
+/* --------------------------------------------------------------------------
+   Payslip sheet polish
+   -------------------------------------------------------------------------- */
+
+.payslip-sheet {
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+}
+
+.payslip-info div,
+.payslip-box {
+  border-color: var(--border);
+}
+
+/* --------------------------------------------------------------------------
+   Responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 760px) {
+  :is(
+      .employees-header,
+      .attendance-header,
+      .payroll-header,
+      .reports-header,
+      .archives-header,
+      .myrecords-header,
+      .myarchives-header,
+      .myaccount-header,
+      .lp-header,
+      .dashboard-hero,
+      .client-welcome-card
+    )
+    h1 {
+    font-size: 22px;
+  }
+
+  .dashboard-hero,
+  .client-welcome-card {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: var(--space-3);
+  }
+
+  :is(
+      .lp-card,
+      .employee-table-card,
+      .attendance-card,
+      .payroll-card,
+      .reports-card,
+      .archives-card,
+      .myrecords-card,
+      .myarchives-card,
+      .myaccount-card,
+      .time-card,
+      .activity-card
+    ) {
+    padding: var(--space-4);
+  }
+}
+
+@media print {
+  body {
+    background: #fff !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Dashboard: payroll totals
+   -------------------------------------------------------------------------- */
+
+.section-title {
+  display: flex;
+  align-items: baseline;
+  gap: 10px;
+}
+
+.section-meta {
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: none;
+  letter-spacing: 0;
+  color: var(--text-3);
+}
+
+.payroll-totals {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--space-4);
+}
+
+.total-card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-sm);
+  padding: var(--space-5) var(--space-6);
+}
+
+.total-card .total-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--text-2);
+  margin-bottom: 8px;
+}
+
+.total-card strong {
+  display: block;
+  font-size: 30px;
+  font-weight: 650;
+  letter-spacing: -0.025em;
+  line-height: 1.15;
+  font-variant-numeric: tabular-nums;
+  color: var(--text);
+  min-height: 35px;
+}
+
+.total-card p {
+  margin-top: 6px;
+  font-size: 12px;
+  color: var(--text-3);
+  min-height: 18px;
+}
+
+.total-card.is-primary {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #fff;
+}
+
+.total-card.is-primary .total-label,
+.total-card.is-primary p {
+  color: rgba(255, 255, 255, 0.62);
+}
+
+.total-card.is-primary strong {
+  color: #fff;
+}
+
+.total-card.is-primary .skeleton {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.total-card.is-primary .skeleton::after {
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.18), transparent);
+}
+
+.lp-empty-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  color: var(--text-2);
+  flex-wrap: wrap;
+}
+
+.latest-btn {
+  margin-top: var(--space-2);
+}
+
+@media (max-width: 760px) {
+  .payroll-totals {
+    grid-template-columns: 1fr;
+  }
+
+  .total-card strong {
+    font-size: 26px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   Fixes found while checking pages in the browser
+   -------------------------------------------------------------------------- */
+
+/* Employee form: one column of fields (rows inside use .lp-form-grid) */
+.employee-form {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.employee-form .form-actions {
+  margin-top: 6px;
+}
+
+.form-actions .cancel-btn,
+.form-actions .save-btn,
+.modal-actions .cancel-btn,
+.modal-actions .confirm-delete-btn,
+.modal-actions .delete-confirm-btn,
+.modal-actions .save-btn {
+  flex: 0 0 auto;
+  min-width: 110px;
+}
+
+/* Modals never scroll sideways */
+:is(.modal-box, .delete-box, .create-modal, .delete-modal, .report-modal, .lp-modal) {
+  overflow-x: hidden;
+}
+
+/* Table action buttons stay on one line */
+td.action-buttons,
+td > .action-buttons,
+td > .lp-btn-row {
+  flex-wrap: nowrap;
+  white-space: nowrap;
+}
+
+td.action-buttons {
+  display: table-cell;
+}
+
+td.action-buttons > * + * {
+  margin-left: 6px;
+}
+
+/* Count-up values inside stat tiles keep the tile's number style */
+.lp-stat strong span {
+  display: inline;
+  margin: 0;
+  font-size: inherit;
+  color: inherit;
+}
+
+/* Page wrappers: the shell provides spacing and background */
+:is(
+    .attendance-page,
+    .archives-page,
+    .employees-page,
+    .myaccount-page,
+    .myrecords-page,
+    .myarchives-page,
+    .payroll-page,
+    .reports-page,
+    .admin-dashboard,
+    .client-dashboard-page
+  ) {
+  padding: 0;
+  background: transparent;
+  min-height: 0;
+}
+
+/* Selected employee in the payroll picker: clear but not heavy */
+.employee-check-card:has(input:checked) {
+  border-color: var(--brand) !important;
+  box-shadow: none;
+  background: var(--surface-2) !important;
+}
+
+.employee-check-card strong {
+  color: var(--text);
+}
+
+.employee-check-card span {
+  color: var(--text-2);
+}
+
+/* Section headings inside cards */
+.employee-select-header h3 {
+  font-size: 15px;
+  font-weight: 650;
+  color: var(--text);
+}
+
+/* Denser tables so action columns fit without side-scrolling */
+thead th,
+table th {
+  padding: 11px 12px;
+  letter-spacing: 0.03em;
+}
+
+table td {
+  padding: 12px;
+}
+
+.employee-table-card,
+.attendance-card {
+  padding: var(--space-4) var(--space-5);
+}
+
+/* Remarks come from the API already capitalised */
+.status {
+  text-transform: none;
+}

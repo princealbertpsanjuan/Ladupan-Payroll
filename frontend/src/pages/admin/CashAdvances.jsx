@@ -1,6 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import SortableTh from "../../components/SortableTh";
+import useSort from "../../hooks/useSort";
+import useFlipList from "../../hooks/useFlipList";
 import api from "../../api/axios";
+import Spinner from "../../components/Spinner";
+import { useToast } from "../../context/ToastContext";
 import { formatMoney, formatDateTime, getEmployeeName } from "../../utils/format";
+import { SkeletonRows } from "../../components/Skeleton";
 
 const todayLocal = () =>
   new Date().toLocaleDateString("en-CA", { timeZone: "Asia/Manila" });
@@ -12,12 +18,26 @@ const emptyForm = () => ({
   note: "",
 });
 
+const SORT_ACCESSORS = {
+  employeeId: (emp) => emp.employeeId || "",
+  name: (emp) => getEmployeeName(emp).toLowerCase(),
+  totalAdvances: (emp) => Number(emp.totalAdvances || 0),
+  totalDeductions: (emp) => Number(emp.totalDeductions || 0),
+  balance: (emp) => Number(emp.balance || 0),
+};
+
 const CashAdvances = () => {
+  const tbodyRef = useRef(null);
   const [summary, setSummary] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [balanceFilter, setBalanceFilter] = useState("all");
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const toast = useToast();
+
+  // Results and errors are shown as toasts
+  const setMessage = ({ type, text }) => {
+    if (text) toast[type](text);
+  };
 
   // Add advance modal
   const [showAddModal, setShowAddModal] = useState(false);
@@ -125,6 +145,10 @@ const CashAdvances = () => {
     return matchesSearch && matchesBalance;
   });
 
+  const { sortedRows, sort, toggleSort } = useSort(filteredSummary, SORT_ACCESSORS);
+
+  useFlipList(tbodyRef, `${sort.key}-${sort.direction}-${search}-${balanceFilter}`);
+
   return (
     <div className="lp-page">
       <div className="lp-header">
@@ -140,8 +164,6 @@ const CashAdvances = () => {
           + Record Cash Advance
         </button>
       </div>
-
-      {message.text && <div className={`lp-alert ${message.type}`}>{message.text}</div>}
 
       <div className="lp-stat-grid">
         <div className="lp-stat">
@@ -174,25 +196,21 @@ const CashAdvances = () => {
           <table className="lp-table">
             <thead>
               <tr>
-                <th>Employee ID</th>
-                <th>Name</th>
-                <th>Total Advanced</th>
-                <th>Paid via Payroll</th>
-                <th>Unpaid Balance</th>
+                <SortableTh label="Employee ID" column="employeeId" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Name" column="name" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Total Advanced" column="totalAdvances" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Paid via Payroll" column="totalDeductions" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Unpaid Balance" column="balance" sort={sort} onSort={toggleSort} />
                 <th>Actions</th>
               </tr>
             </thead>
 
-            <tbody>
+            <tbody ref={tbodyRef}>
               {loading ? (
-                <tr>
-                  <td colSpan="6" className="lp-empty">
-                    Loading...
-                  </td>
-                </tr>
-              ) : filteredSummary.length > 0 ? (
-                filteredSummary.map((emp) => (
-                  <tr key={emp._id}>
+                <SkeletonRows rows={6} cols={6} />
+              ) : sortedRows.length > 0 ? (
+                sortedRows.map((emp) => (
+                  <tr key={emp._id} data-key={emp._id}>
                     <td>{emp.employeeId}</td>
                     <td>
                       {getEmployeeName(emp)}
@@ -310,7 +328,8 @@ const CashAdvances = () => {
                 >
                   Cancel
                 </button>
-                <button type="submit" className="lp-btn" disabled={saving}>
+                <button type="submit" className="lp-btn" disabled={saving}aria-busy={saving}>
+                  {saving && <Spinner />}
                   {saving ? "Saving..." : "Save"}
                 </button>
               </div>

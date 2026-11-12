@@ -255,3 +255,27 @@
     grid-template-columns: 1fr 1fr;
   }
 }
+
+/* Loading placeholder with the payslip's layout */
+.payslip-skeleton {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+.payslip-skeleton-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.payslip-skeleton-grid.two {
+  grid-template-columns: 1fr 1fr;
+}
+
+@media (max-width: 760px) {
+  .payslip-skeleton-grid,
+  .payslip-skeleton-grid.two {
+    grid-template-columns: 1fr;
+  }
+}

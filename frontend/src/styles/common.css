@@ -82,7 +82,7 @@
   font-weight: bold;
   font-size: 14px;
   cursor: pointer;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
   background: #050505;
   color: white;
   white-space: nowrap;
@@ -557,7 +557,7 @@
 a.lp-stat {
   display: block;
   color: inherit;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 a.lp-stat:hover {

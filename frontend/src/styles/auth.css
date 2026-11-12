@@ -61,7 +61,7 @@
   color: white;
   font-weight: bold;
   cursor: pointer;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .login-card button:hover {

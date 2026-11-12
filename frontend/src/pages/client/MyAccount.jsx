@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
+import Spinner from "../../components/Spinner";
 import "../../styles/myaccount.css";
 
 const emptyPasswordForm = {
@@ -11,6 +13,7 @@ const emptyPasswordForm = {
 
 const MyAccount = () => {
   const { user, refreshUser } = useAuth();
+  const toast = useToast();
 
   const [showPasswordForm, setShowPasswordForm] = useState(false);
   const [passwordForm, setPasswordForm] = useState(emptyPasswordForm);
@@ -43,7 +46,7 @@ const MyAccount = () => {
         newPassword: passwordForm.newPassword,
       });
 
-      setPasswordMessage({ type: "success", text: res.data.message });
+      toast.success(res.data.message, { title: "Password updated" });
       setPasswordForm(emptyPasswordForm);
       setShowPasswordForm(false);
     } catch (error) {
@@ -183,7 +186,8 @@ const MyAccount = () => {
               </div>
 
               <div>
-                <button type="submit" className="lp-btn" disabled={saving}>
+                <button type="submit" className="lp-btn" disabled={saving} aria-busy={saving}>
+                  {saving && <Spinner />}
                   {saving ? "Saving..." : "Save New Password"}
                 </button>
               </div>

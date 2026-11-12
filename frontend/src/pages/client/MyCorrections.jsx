@@ -1,7 +1,10 @@
 import { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
+import Spinner from "../../components/Spinner";
+import { useToast } from "../../context/ToastContext";
 import { formatDateTime } from "../../utils/format";
+import { SkeletonRows } from "../../components/Skeleton";
 
 const emptyForm = {
   date: "",
@@ -19,7 +22,12 @@ const MyCorrections = () => {
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(emptyForm);
   const [showForm, setShowForm] = useState(false);
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const toast = useToast();
+
+  // Results and errors are shown as toasts
+  const setMessage = ({ type, text }) => {
+    if (text) toast[type](text);
+  };
 
   useEffect(() => {
     fetchData();
@@ -137,8 +145,6 @@ const MyCorrections = () => {
         )}
       </div>
 
-      {message.text && <div className={`lp-alert ${message.type}`}>{message.text}</div>}
-
       {showForm && (
         <div className="lp-card">
           <h2>New Correction Request</h2>
@@ -202,7 +208,8 @@ const MyCorrections = () => {
             </div>
 
             <div className="lp-btn-row">
-              <button type="submit" className="lp-btn" disabled={saving}>
+              <button type="submit" className="lp-btn" disabled={saving}aria-busy={saving}>
+                {saving && <Spinner />}
                 {saving ? "Submitting..." : "Submit Request"}
               </button>
 
@@ -240,11 +247,7 @@ const MyCorrections = () => {
 
             <tbody>
               {loading ? (
-                <tr>
-                  <td colSpan="7" className="lp-empty">
-                    Loading requests...
-                  </td>
-                </tr>
+                <SkeletonRows rows={6} cols={7} />
               ) : corrections.length > 0 ? (
                 corrections.map((correction) => (
                   <tr key={correction._id}>

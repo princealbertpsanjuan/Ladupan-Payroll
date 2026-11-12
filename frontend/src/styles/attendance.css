@@ -30,7 +30,7 @@
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
-  transition: 0.3s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .add-btn:hover {
@@ -116,7 +116,7 @@ tr:hover {
   cursor: pointer;
   font-size: 13px;
   font-weight: 600;
-  transition: 0.3s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .edit-btn {
@@ -200,7 +200,7 @@ tr:hover {
   border-radius: 10px;
   font-size: 14px;
   outline: none;
-  transition: 0.3s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .modal-box input:focus,
@@ -223,7 +223,7 @@ tr:hover {
   border-radius: 10px;
   cursor: pointer;
   font-weight: 600;
-  transition: 0.3s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .cancel-btn {

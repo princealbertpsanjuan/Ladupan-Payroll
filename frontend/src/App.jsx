@@ -30,220 +30,63 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import AdminLayout from "./layouts/AdminLayout";
 import ClientLayout from "./layouts/ClientLayout";
 
+// Theme and motion load last so they apply on top of the page styles
+import "./styles/theme.css";
+import "./styles/motion.css";
+
+// Each side uses ONE layout route, so the sidebar stays mounted while the
+// pages inside it change (this lets the active-menu indicator slide and the
+// page content fade between routes).
 function App() {
   return (
     <BrowserRouter>
       <Routes>
-
         {/* LOGIN */}
-        <Route
-          path="/"
-          element={<Login />}
-        />
+        <Route path="/" element={<Login />} />
 
         {/* ADMIN ROUTES */}
         <Route
-          path="/admin/dashboard"
           element={
             <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Dashboard />
-              </AdminLayout>
+              <AdminLayout />
             </ProtectedRoute>
           }
-        />
-
-        <Route
-          path="/admin/employees"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Employees />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/attendance"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Attendance />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/payroll"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Payroll />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/reports"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Reports />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/archives"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Archives />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/corrections"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <Corrections />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/cash-advances"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <CashAdvances />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/audit-log"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <AuditLog />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/admin/payslip/:reportId/:employeeId"
-          element={
-            <ProtectedRoute allowedRole="admin">
-              <AdminLayout>
-                <PayslipPage admin />
-              </AdminLayout>
-            </ProtectedRoute>
-          }
-        />
+        >
+          <Route path="/admin/dashboard" element={<Dashboard />} />
+          <Route path="/admin/employees" element={<Employees />} />
+          <Route path="/admin/attendance" element={<Attendance />} />
+          <Route path="/admin/payroll" element={<Payroll />} />
+          <Route path="/admin/reports" element={<Reports />} />
+          <Route path="/admin/archives" element={<Archives />} />
+          <Route path="/admin/corrections" element={<Corrections />} />
+          <Route path="/admin/cash-advances" element={<CashAdvances />} />
+          <Route path="/admin/audit-log" element={<AuditLog />} />
+          <Route
+            path="/admin/payslip/:reportId/:employeeId"
+            element={<PayslipPage admin />}
+          />
+        </Route>
 
         {/* CLIENT ROUTES */}
         <Route
-          path="/client/dashboard"
           element={
             <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <ClientDashboard />
-              </ClientLayout>
+              <ClientLayout />
             </ProtectedRoute>
           }
-        />
-
-        <Route
-          path="/client/time"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <TimeInOut />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/client/records"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <MyRecords />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/client/archives"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <MyArchives />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/client/account"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <MyAccount />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/client/payslips"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <MyPayslips />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/client/payslips/:reportId"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <PayslipPage />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
-
-        <Route
-          path="/client/corrections"
-          element={
-            <ProtectedRoute allowedRole="employee">
-              <ClientLayout>
-                <MyCorrections />
-              </ClientLayout>
-            </ProtectedRoute>
-          }
-        />
+        >
+          <Route path="/client/dashboard" element={<ClientDashboard />} />
+          <Route path="/client/time" element={<TimeInOut />} />
+          <Route path="/client/records" element={<MyRecords />} />
+          <Route path="/client/archives" element={<MyArchives />} />
+          <Route path="/client/account" element={<MyAccount />} />
+          <Route path="/client/payslips" element={<MyPayslips />} />
+          <Route path="/client/payslips/:reportId" element={<PayslipPage />} />
+          <Route path="/client/corrections" element={<MyCorrections />} />
+        </Route>
 
         {/* UNKNOWN PAGES */}
         <Route path="*" element={<Navigate to="/" />} />
-
       </Routes>
     </BrowserRouter>
   );

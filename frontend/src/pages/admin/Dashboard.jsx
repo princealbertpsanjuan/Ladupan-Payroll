@@ -2,11 +2,33 @@ import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../../context/AuthContext";
 import api from "../../api/axios";
-import { formatMoney } from "../../utils/format";
+import Icon from "../../components/Icon";
+import CountUp from "../../components/CountUp";
+import { SkeletonText } from "../../components/Skeleton";
 import "../../styles/adminDashboard.css";
+
+const QUICK_LINKS = [
+  { to: "/admin/employees", icon: "users", tone: "purple", title: "Employee Management", text: "Create, update, and manage employee accounts." },
+  { to: "/admin/attendance", icon: "clock", tone: "green", title: "Attendance Records", text: "Monitor employee DTR and attendance activity." },
+  { to: "/admin/payroll", icon: "payroll", tone: "orange", title: "Payroll Generation", text: "Generate payroll for selected employees and date range." },
+  { to: "/admin/reports", icon: "report", tone: "blue", title: "Payroll Reports", text: "View and print generated payroll summaries." },
+  { to: "/admin/archives", icon: "archive", tone: "red", title: "Archives", text: "Access archived payroll and attendance records." },
+  { to: "/admin/corrections", icon: "edit", tone: "purple", title: "DTR Corrections", text: "Review employee requests to fix their time records." },
+  { to: "/admin/cash-advances", icon: "cash", tone: "green", title: "Cash Advances", text: "Record advances and track repayments through payroll." },
+  { to: "/admin/audit-log", icon: "shield", tone: "blue", title: "Audit Log", text: "See who changed employees, DTRs, and payroll." },
+];
+
+// Shows a placeholder while loading, then counts up to the real value
+const Value = ({ loading, value, format = "integer", delay = 0 }) =>
+  loading ? (
+    <SkeletonText width={format === "money" ? 120 : 48} />
+  ) : (
+    <CountUp value={value} format={format} delay={delay} />
+  );
 
 const Dashboard = () => {
   const { user } = useAuth();
+  const [loading, setLoading] = useState(true);
 
   const [stats, setStats] = useState({
     activeDTR: 0,
@@ -17,6 +39,7 @@ const Dashboard = () => {
     pendingCorrections: 0,
     timedInToday: 0,
     outstandingCashAdvances: 0,
+    latestPayrollTotals: null,
     latestPayrolls: [],
     recentPayrollActivity: {
       lastPayrollPeriod: "Not generated yet",
@@ -36,6 +59,8 @@ const Dashboard = () => {
       setStats((current) => ({ ...current, ...res.data }));
     } catch (error) {
       console.log(error);
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -50,6 +75,8 @@ const Dashboard = () => {
       year: "numeric",
     });
   };
+
+  const totals = stats.latestPayrollTotals;
 
   return (
     <div className="admin-dashboard">
@@ -70,103 +97,99 @@ const Dashboard = () => {
       </section>
 
       <section>
-        <h2 className="section-title">Quick Access</h2>
+        <h2 className="section-title">
+          Latest Payroll
+          {totals && <span className="section-meta">{totals.period}</span>}
+        </h2>
 
-        <div className="quick-grid">
-          <Link to="/admin/employees" className="quick-card">
-            <div className="card-icon purple">👥</div>
-            <h3>Employee Management</h3>
-            <p>Create, update, and manage employee accounts.</p>
-            <span>→</span>
-          </Link>
+        {loading || totals ? (
+          <div className="payroll-totals lp-stagger">
+            <div className="total-card">
+              <span className="total-label">Gross Pay</span>
+              <strong>
+                <Value loading={loading} value={totals?.grossPay} format="money" />
+              </strong>
+              <p>{totals ? `${totals.totalEmployees} employee(s) paid` : " "}</p>
+            </div>
 
-          <Link to="/admin/attendance" className="quick-card">
-            <div className="card-icon green">📋</div>
-            <h3>Attendance Records</h3>
-            <p>Monitor employee DTR and attendance activity.</p>
-            <span>→</span>
-          </Link>
+            <div className="total-card">
+              <span className="total-label">Deductions</span>
+              <strong>
+                <Value loading={loading} value={totals?.deductions} format="money" delay={40} />
+              </strong>
+              <p>Cash advances and other deductions</p>
+            </div>
 
-          <Link to="/admin/payroll" className="quick-card">
-            <div className="card-icon orange">💰</div>
-            <h3>Payroll Generation</h3>
-            <p>Generate payroll for selected employees and date range.</p>
-            <span>→</span>
-          </Link>
-
-          <Link to="/admin/reports" className="quick-card">
-            <div className="card-icon blue">📊</div>
-            <h3>Payroll Reports</h3>
-            <p>View and print generated payroll summaries.</p>
-            <span>→</span>
-          </Link>
-
-          <Link to="/admin/archives" className="quick-card">
-            <div className="card-icon red">🗃️</div>
-            <h3>Archives</h3>
-            <p>Access archived payroll and attendance records.</p>
-            <span>→</span>
-          </Link>
-
-          <Link to="/admin/corrections" className="quick-card">
-            <div className="card-icon purple">✏️</div>
-            <h3>DTR Corrections</h3>
-            <p>Review employee requests to fix their time records.</p>
-            <span>→</span>
-          </Link>
-
-          <Link to="/admin/cash-advances" className="quick-card">
-            <div className="card-icon green">💵</div>
-            <h3>Cash Advances</h3>
-            <p>Record advances and track repayments through payroll.</p>
-            <span>→</span>
-          </Link>
-
-          <Link to="/admin/audit-log" className="quick-card">
-            <div className="card-icon blue">🛡️</div>
-            <h3>Audit Log</h3>
-            <p>See who changed employees, DTRs, and payroll.</p>
-            <span>→</span>
-          </Link>
-        </div>
+            <div className="total-card is-primary">
+              <span className="total-label">Net Pay</span>
+              <strong>
+                <Value loading={loading} value={totals?.netPay} format="money" delay={80} />
+              </strong>
+              <p>Total paid out this period</p>
+            </div>
+          </div>
+        ) : (
+          <div className="lp-card lp-empty-card">
+            <p>No payroll has been generated yet. Totals appear here after your first payroll.</p>
+            <Link to="/admin/payroll" className="lp-btn small">
+              Go to Payroll
+            </Link>
+          </div>
+        )}
       </section>
 
       <section>
         <h2 className="section-title">Overview</h2>
 
-        <div className="overview-grid">
+        <div className="overview-grid lp-stagger">
           <div className="overview-card">
-            <div className="overview-icon blue">📄</div>
+            <div className="overview-icon blue">
+              <Icon name="records" />
+            </div>
             <div>
               <h3>Active DTR Records</h3>
-              <strong>{stats.activeDTR}</strong>
+              <strong>
+                <Value loading={loading} value={stats.activeDTR} />
+              </strong>
               <p>Records not yet included in payroll</p>
             </div>
           </div>
 
           <div className="overview-card">
-            <div className="overview-icon green">👥</div>
+            <div className="overview-icon green">
+              <Icon name="users" />
+            </div>
             <div>
               <h3>Total Employees</h3>
-              <strong>{stats.totalEmployees}</strong>
+              <strong>
+                <Value loading={loading} value={stats.totalEmployees} delay={40} />
+              </strong>
               <p>All active employees in the system</p>
             </div>
           </div>
 
           <div className="overview-card">
-            <div className="overview-icon purple">🧾</div>
+            <div className="overview-icon purple">
+              <Icon name="receipt" />
+            </div>
             <div>
               <h3>Generated Payrolls</h3>
-              <strong>{stats.generatedPayrolls}</strong>
+              <strong>
+                <Value loading={loading} value={stats.generatedPayrolls} delay={80} />
+              </strong>
               <p>Payroll reports generated</p>
             </div>
           </div>
 
           <div className="overview-card">
-            <div className="overview-icon orange">🗂️</div>
+            <div className="overview-icon orange">
+              <Icon name="archive" />
+            </div>
             <div>
               <h3>Archived Records</h3>
-              <strong>{stats.archivedRecords}</strong>
+              <strong>
+                <Value loading={loading} value={stats.archivedRecords} delay={120} />
+              </strong>
               <p>Payroll and attendance records archived</p>
             </div>
           </div>
@@ -176,13 +199,15 @@ const Dashboard = () => {
       <section>
         <h2 className="section-title">Needs Attention</h2>
 
-        <div className="lp-stat-grid">
+        <div className="lp-stat-grid lp-stagger">
           <Link
             to="/admin/attendance?filter=incomplete"
             className={`lp-stat ${stats.incompleteRecords > 0 ? "attention" : ""}`}
           >
             <span>DTRs without time-out (before today)</span>
-            <strong>{stats.incompleteRecords}</strong>
+            <strong>
+              <Value loading={loading} value={stats.incompleteRecords} />
+            </strong>
           </Link>
 
           <Link
@@ -190,18 +215,43 @@ const Dashboard = () => {
             className={`lp-stat ${stats.pendingCorrections > 0 ? "attention" : ""}`}
           >
             <span>Pending DTR corrections</span>
-            <strong>{stats.pendingCorrections}</strong>
+            <strong>
+              <Value loading={loading} value={stats.pendingCorrections} />
+            </strong>
           </Link>
 
           <Link to="/admin/attendance" className="lp-stat">
             <span>Employees timed in today</span>
-            <strong>{stats.timedInToday}</strong>
+            <strong>
+              <Value loading={loading} value={stats.timedInToday} />
+            </strong>
           </Link>
 
           <Link to="/admin/cash-advances" className="lp-stat">
             <span>Unpaid cash advances</span>
-            <strong>{formatMoney(stats.outstandingCashAdvances)}</strong>
+            <strong>
+              <Value loading={loading} value={stats.outstandingCashAdvances} format="money" />
+            </strong>
           </Link>
+        </div>
+      </section>
+
+      <section>
+        <h2 className="section-title">Quick Access</h2>
+
+        <div className="quick-grid lp-stagger">
+          {QUICK_LINKS.map((item) => (
+            <Link key={item.to} to={item.to} className="quick-card">
+              <div className={`card-icon ${item.tone}`}>
+                <Icon name={item.icon} />
+              </div>
+              <h3>{item.title}</h3>
+              <p>{item.text}</p>
+              <span>
+                <Icon name="arrowRight" size={18} />
+              </span>
+            </Link>
+          ))}
         </div>
       </section>
 
@@ -255,7 +305,12 @@ const Dashboard = () => {
                   <tr key={payroll._id}>
                     <td>{payroll.period}</td>
                     <td>{payroll.totalEmployees}</td>
-                    <td>{formatMoney(payroll.totalNet)}</td>
+                    <td>
+                      {`₱${Number(payroll.totalNet || 0).toLocaleString("en-PH", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}`}
+                    </td>
                     <td>{payroll.generatedBy || "-"}</td>
                     <td>{formatDate(payroll.generatedDate)}</td>
                   </tr>
@@ -266,7 +321,8 @@ const Dashboard = () => {
         )}
 
         <Link to="/admin/reports" className="latest-btn">
-          View Payroll Reports →
+          View Payroll Reports
+          <Icon name="arrowRight" size={16} />
         </Link>
       </section>
     </div>

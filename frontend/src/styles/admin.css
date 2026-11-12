@@ -65,7 +65,7 @@
   border-radius: 10px;
   cursor: pointer;
   font-weight: bold;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .admin-btn:hover {

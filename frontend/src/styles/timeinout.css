@@ -49,7 +49,7 @@
   cursor: pointer;
   font-size: 15px;
   font-weight: 700;
-  transition: 0.2s;
+  transition: transform var(--dur-micro) var(--ease-standard), opacity var(--dur-micro) var(--ease-standard);
 }
 
 .time-in-btn {

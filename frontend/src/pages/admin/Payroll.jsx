@@ -1,6 +1,8 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import api from "../../api/axios";
+import { useToast } from "../../context/ToastContext";
+import Spinner from "../../components/Spinner";
 import { formatMoney, formatMinutes } from "../../utils/format";
 import "../../styles/payroll.css";
 
@@ -17,10 +19,16 @@ const Payroll = () => {
   const [deductions, setDeductions] = useState({});
   const [includeIncomplete, setIncludeIncomplete] = useState(false);
 
-  const [message, setMessage] = useState({ type: "", text: "" });
+  const toast = useToast();
+
+  // Results and errors are shown as toasts
+  const setMessage = ({ type, text, title }) => {
+    if (text) toast[type](text, title ? { title } : undefined);
+  };
   const [report, setReport] = useState(null);
   const [skipped, setSkipped] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [busyAction, setBusyAction] = useState("");
 
   useEffect(() => {
     fetchEmployees();
@@ -88,7 +96,7 @@ const Payroll = () => {
 
     try {
       setLoading(true);
-      setMessage({ type: "", text: "" });
+      setBusyAction("preview");
 
       const res = await api.post("/payroll/preview", {
         startDate,
@@ -122,6 +130,7 @@ const Payroll = () => {
       });
     } finally {
       setLoading(false);
+      setBusyAction("");
     }
   };
 
@@ -164,7 +173,7 @@ const Payroll = () => {
   const generatePayroll = async () => {
     try {
       setLoading(true);
-      setMessage({ type: "", text: "" });
+      setBusyAction("generate");
 
       const res = await api.post("/payroll/generate", {
         startDate,
@@ -181,7 +190,8 @@ const Payroll = () => {
 
       setMessage({
         type: "success",
-        text: `${res.data.message}. The included DTR records were moved to Archives.`,
+        title: "Payroll generated",
+        text: `${res.data.payrollReport?.totalEmployees || 0} employee(s) paid. Their DTR records were moved to Archives and payslips are ready.`,
       });
       setReport(res.data.payrollReport);
       setSkipped(res.data.skipped || []);
@@ -202,6 +212,7 @@ const Payroll = () => {
       }
     } finally {
       setLoading(false);
+      setBusyAction("");
     }
   };
 
@@ -302,20 +313,20 @@ const Payroll = () => {
             )}
           </div>
 
-          <button type="submit" className="generate-btn" disabled={loading}>
-            {loading && !preview ? "Loading..." : "Preview Payroll"}
+          <button
+            type="submit"
+            className="generate-btn"
+            disabled={loading}
+            aria-busy={busyAction === "preview"}
+          >
+            {busyAction === "preview" && <Spinner />}
+            {busyAction === "preview" ? "Calculating..." : "Preview Payroll"}
           </button>
         </form>
-
-        {message.text && (
-          <div className={`lp-alert ${message.type}`} style={{ marginTop: 18 }}>
-            {message.text}
-          </div>
-        )}
       </div>
 
       {preview && preview.employees.length > 0 && (
-        <div className="payroll-card report-card">
+        <div className="payroll-card report-card lp-reveal">
           <h2>
             Payroll Preview: {preview.startDate} to {preview.endDate}
           </h2>
@@ -492,8 +503,10 @@ const Payroll = () => {
               style={{ marginTop: 0 }}
               onClick={generatePayroll}
               disabled={loading || hasRowErrors || (hasIncomplete && !includeIncomplete)}
+              aria-busy={busyAction === "generate"}
             >
-              {loading ? "Generating..." : "Generate Payroll"}
+              {busyAction === "generate" && <Spinner />}
+              {busyAction === "generate" ? "Generating Payroll..." : "Generate Payroll"}
             </button>
 
             <button type="button" className="lp-btn secondary" onClick={resetPreview}>
@@ -504,7 +517,7 @@ const Payroll = () => {
       )}
 
       {report && (
-        <div className="payroll-card report-card">
+        <div className="payroll-card report-card lp-reveal">
           <h2>Generated Payroll Report</h2>
 
           <div className="report-summary">

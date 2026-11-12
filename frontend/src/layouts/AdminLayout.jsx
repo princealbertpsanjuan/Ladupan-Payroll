@@ -1,46 +1,17 @@
-import { NavLink, useNavigate } from "react-router-dom";
-import { useAuth } from "../context/AuthContext";
-import logo from "../assets/ladupan-logo.png";
-import "../styles/layout.css";
+import AppShell from "../components/AppShell";
 
-const AdminLayout = ({ children }) => {
-  const { logout } = useAuth();
-  const navigate = useNavigate();
+const ADMIN_NAV = [
+  { to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
+  { to: "/admin/employees", label: "Employees", icon: "users" },
+  { to: "/admin/attendance", label: "Attendance", icon: "clock" },
+  { to: "/admin/corrections", label: "DTR Corrections", icon: "edit" },
+  { to: "/admin/payroll", label: "Payroll", icon: "payroll" },
+  { to: "/admin/cash-advances", label: "Cash Advances", icon: "cash" },
+  { to: "/admin/reports", label: "Reports", icon: "report" },
+  { to: "/admin/archives", label: "Archives", icon: "archive" },
+  { to: "/admin/audit-log", label: "Audit Log", icon: "shield" },
+];
 
-  const handleLogout = () => {
-    logout();
-    navigate("/");
-  };
-
-  return (
-    <div className="layout">
-      <aside className="sidebar">
-        <div className="sidebar-brand">
-          <img src={logo} alt="Ladupan Logo" className="sidebar-logo" />
-          <h2>Ladupan</h2>
-          <p>Admin Panel</p>
-        </div>
-
-        <nav>
-          <NavLink to="/admin/dashboard">Dashboard</NavLink>
-          <NavLink to="/admin/employees">Employees</NavLink>
-          <NavLink to="/admin/attendance">Attendance</NavLink>
-          <NavLink to="/admin/corrections">DTR Corrections</NavLink>
-          <NavLink to="/admin/payroll">Payroll</NavLink>
-          <NavLink to="/admin/cash-advances">Cash Advances</NavLink>
-          <NavLink to="/admin/reports">Reports</NavLink>
-          <NavLink to="/admin/archives">Archives</NavLink>
-          <NavLink to="/admin/audit-log">Audit Log</NavLink>
-        </nav>
-
-        <button className="logout-btn" onClick={handleLogout}>Logout</button>
-      </aside>
-
-      <main className="main-content">
-        {children}
-      </main>
-    </div>
-  );
-};
+const AdminLayout = () => <AppShell navItems={ADMIN_NAV} subtitle="Admin Panel" />;
 
 export default AdminLayout;
