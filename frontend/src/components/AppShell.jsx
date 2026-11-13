@@ -132,6 +132,8 @@ const AppShell = ({ navItems, subtitle }) => {
     return () => window.removeEventListener("keydown", onKey);
   }, [drawerOpen]);
 
+  const accountPath = user?.role === "admin" ? "/admin/account" : "/client/account";
+
   const initials = `${user?.firstName?.[0] || ""}${user?.lastName?.[0] || ""}`.toUpperCase() || "L";
 
   return (
@@ -217,16 +219,6 @@ const AppShell = ({ navItems, subtitle }) => {
         </nav>
 
         <div className="sidebar-footer">
-          <div className="sidebar-user" title={collapsed ? `${user?.firstName || ""} ${user?.lastName || ""}` : undefined}>
-            <span className="sidebar-avatar">{initials}</span>
-            <span className="sidebar-user-text sidebar-fade">
-              <strong>
-                {user?.firstName} {user?.lastName}
-              </strong>
-              <span>{user?.email}</span>
-            </span>
-          </div>
-
           <button
             type="button"
             className="sidebar-action notification-trigger"
@@ -268,6 +260,21 @@ const AppShell = ({ navItems, subtitle }) => {
             <Icon name="logout" />
             <span className="nav-label sidebar-fade">Logout</span>
           </button>
+
+          {/* Signed-in user, at the very bottom; opens My Account */}
+          <NavLink
+            to={accountPath}
+            className="sidebar-user"
+            title={collapsed ? `${user?.firstName || ""} ${user?.lastName || ""}` : "My Account"}
+          >
+            <span className="sidebar-avatar">{initials}</span>
+            <span className="sidebar-user-text sidebar-fade">
+              <strong>
+                {user?.firstName} {user?.lastName}
+              </strong>
+              <span>{user?.email}</span>
+            </span>
+          </NavLink>
         </div>
       </aside>
 
