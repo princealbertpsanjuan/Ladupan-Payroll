@@ -10,6 +10,7 @@
 // Usage (from the backend folder):
 //   npm run clean-db              -> preview only, nothing is deleted
 //   npm run clean-db -- --confirm -> back up everything, then delete
+//   (or: node scripts/cleanDatabase.js --confirm)
 //
 // A JSON backup of every collection is written to backend/backups/
 // before anything is deleted (skip with --no-backup, not recommended).
@@ -30,8 +31,11 @@ const Counter = require("../models/Counter");
 const Setting = require("../models/Setting");
 
 const args = process.argv.slice(2);
-const CONFIRM = args.includes("--confirm");
-const SKIP_BACKUP = args.includes("--no-backup");
+// PowerShell can drop the "--" in `npm run clean-db -- --confirm`, so npm
+// receives --confirm itself and passes it on as npm_config_confirm.
+const CONFIRM = args.includes("--confirm") || process.env.npm_config_confirm === "true";
+const SKIP_BACKUP =
+  args.includes("--no-backup") || process.env.npm_config_no_backup === "true";
 
 const DELETE_ALL = [
   { label: "DTR / attendance records (active + archived)", model: Attendance },
@@ -106,7 +110,7 @@ const main = async () => {
 
   if (!CONFIRM) {
     console.log("Preview only. Nothing was deleted.");
-    console.log("To clean the database, run:  npm run clean-db -- --confirm");
+    console.log("To clean the database, run:  node scripts/cleanDatabase.js --confirm");
     await mongoose.disconnect();
     return;
   }
