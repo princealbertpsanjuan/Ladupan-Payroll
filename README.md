@@ -118,6 +118,14 @@ from" matches the shop's public IP (search "what is my ip" on the same Wi-Fi).
   recalculate for that day only; the employee's default schedule in Employee
   Management stays the same. Such days are tagged "adjusted", and the change is
   written to the Audit Log.
+- **24-hour operation / night shifts:** a DTR record belongs to the date the
+  shift **started**. Hours count across midnight (18:00 → 06:00 = 12 hours).
+  An employee who timed in last night times out the next morning as usual;
+  that closes last night's record (shown as "06:00 +1 day"). A shift can be at
+  most **16 hours**; an older open shift needs a DTR correction. In admin edits
+  and corrections, a time out earlier than the time in means the next day.
+- **No future times:** a time in or time out can't be later than the current
+  time (Philippine time).
 - **Paid hours count from the actual time-in to time-out.** Lateness already
   reduces paid hours, so no separate late deduction is charged. Late minutes are
   still recorded and shown.

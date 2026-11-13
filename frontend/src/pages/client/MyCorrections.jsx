@@ -186,6 +186,7 @@ const MyCorrections = () => {
 
               <div className="lp-field">
                 <label>Correct Time Out</label>
+                <small>Night shift? A time out earlier than the time in counts as the next day.</small>
                 <input
                   type="time"
                   name="requestedTimeOut"

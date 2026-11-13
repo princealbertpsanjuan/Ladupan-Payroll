@@ -1,8 +1,18 @@
 const CorrectionRequest = require("../models/CorrectionRequest");
 const Attendance = require("../models/Attendance");
 const User = require("../models/User");
-const { applyAttendanceRules, timeToMinutes } = require("../utils/attendanceRules");
-const { getToday, isValidDate, isValidTime } = require("../utils/timeUtils");
+const {
+  applyAttendanceRules,
+  validateShiftTimes,
+  crossesMidnight,
+} = require("../utils/attendanceRules");
+const {
+  getToday,
+  getCurrentTime,
+  addDays,
+  isValidDate,
+  isValidTime,
+} = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
 const { notifyUser, notifyAdmins } = require("../utils/notify");
 
@@ -36,14 +46,29 @@ exports.createCorrection = async (req, res) => {
       });
     }
 
-    if (timeOut) {
-      if (!isValidTime(timeOut)) {
-        return res.status(400).json({ message: "Please enter a valid time out" });
-      }
+    if (timeOut && !isValidTime(timeOut)) {
+      return res.status(400).json({ message: "Please enter a valid time out" });
+    }
 
-      if (timeToMinutes(timeOut) <= timeToMinutes(requestedTimeIn)) {
+    // A time-out earlier than the time-in means the next day (night shift)
+    const shiftError = validateShiftTimes(requestedTimeIn, timeOut);
+
+    if (shiftError) {
+      return res.status(400).json({ message: shiftError });
+    }
+
+    const now = `${today} ${getCurrentTime()}`;
+
+    if (`${date} ${requestedTimeIn}` > now) {
+      return res.status(400).json({ message: "Time in can't be later than the current time" });
+    }
+
+    if (timeOut) {
+      const outDate = crossesMidnight(requestedTimeIn, timeOut) ? addDays(date, 1) : date;
+
+      if (`${outDate} ${timeOut}` > now) {
         return res.status(400).json({
-          message: "Time out must be later than time in",
+          message: "Time out can't be later than the current time",
         });
       }
     }

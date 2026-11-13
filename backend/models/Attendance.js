@@ -28,6 +28,13 @@ const attendanceSchema = new mongoose.Schema(
       default: null,
     },
 
+    // True when the time-out happened the day after the shift started
+    // (night shift, e.g. 18:00 -> 06:00). Calculated automatically.
+    timeOutNextDay: {
+      type: Boolean,
+      default: false,
+    },
+
     totalHours: {
       type: Number,
       default: 0,

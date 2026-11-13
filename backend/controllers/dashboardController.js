@@ -4,7 +4,8 @@ const PayrollReport = require("../models/PayrollReport");
 const CorrectionRequest = require("../models/CorrectionRequest");
 const { getBalances, getBalance } = require("../utils/cashAdvanceUtils");
 const { roundMoney } = require("../utils/attendanceRules");
-const { getToday } = require("../utils/timeUtils");
+const { getToday, getYesterday, getCurrentTime } = require("../utils/timeUtils");
+const { timeToMinutes, MAX_SHIFT_MINUTES } = require("../utils/attendanceRules");
 
 // Incomplete = timed in, no time-out, and not Absent
 const INCOMPLETE_FILTER = {
@@ -12,6 +13,25 @@ const INCOMPLETE_FILTER = {
   timeIn: { $ne: null },
   timeOut: null,
   remarks: { $ne: "Absent" },
+};
+
+const countOverdueIncomplete = async (today) => {
+  const olderThanYesterday = await Attendance.countDocuments({
+    ...INCOMPLETE_FILTER,
+    date: { $lt: getYesterday() },
+  });
+
+  const yesterdayOpen = await Attendance.find({
+    ...INCOMPLETE_FILTER,
+    date: getYesterday(),
+  }).select("timeIn");
+
+  const now = timeToMinutes(getCurrentTime());
+  const overdueYesterday = yesterdayOpen.filter(
+    (record) => 24 * 60 - timeToMinutes(record.timeIn) + now > MAX_SHIFT_MINUTES
+  ).length;
+
+  return olderThanYesterday + overdueYesterday;
 };
 
 exports.getAdminDashboard = async (req, res) => {
@@ -33,9 +53,9 @@ exports.getAdminDashboard = async (req, res) => {
       User.countDocuments({ role: "employee", isActive: true }),
       PayrollReport.countDocuments(),
       Attendance.countDocuments({ isArchived: true }),
-      // Today's open records are normal during work hours, so only
-      // earlier days count as needing attention
-      Attendance.countDocuments({ ...INCOMPLETE_FILTER, date: { $lt: today } }),
+      // Open records from today, and last night's shifts still within
+      // their 16 hours, are normal; older ones need attention
+      countOverdueIncomplete(today),
       CorrectionRequest.countDocuments({ status: "pending" }),
       Attendance.countDocuments({ date: today }),
       PayrollReport.find()

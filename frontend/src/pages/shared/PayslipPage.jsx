@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import api from "../../api/axios";
 import { SkeletonBlock } from "../../components/Skeleton";
+import TimeOutValue from "../../components/TimeOutValue";
 import logo from "../../assets/ladupan-logo.png";
 import {
   formatMoney,
@@ -231,7 +232,9 @@ const PayslipPage = ({ admin = false }) => {
                   <td>{formatDate(record.date)}</td>
                   <td>{record.requiredTimeIn || "-"}</td>
                   <td>{record.timeIn || "-"}</td>
-                  <td>{record.timeOut || "-"}</td>
+                  <td>
+                    <TimeOutValue record={record} />
+                  </td>
                   <td>{formatMinutes(record.lateMinutes)}</td>
                   <td>{record.totalHours || 0}</td>
                   <td>{formatMoney(record.grossPay)}</td>

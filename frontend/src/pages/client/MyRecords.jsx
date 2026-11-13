@@ -5,6 +5,7 @@ import StatusBadge from "../../components/StatusBadge";
 import { formatMinutes, isIncompleteRecord } from "../../utils/format";
 import "../../styles/myrecords.css";
 import { SkeletonRows } from "../../components/Skeleton";
+import TimeOutValue from "../../components/TimeOutValue";
 
 const MyRecords = () => {
   const [records, setRecords] = useState([]);
@@ -122,7 +123,9 @@ const MyRecords = () => {
 
                   <td>{record.timeIn || "-"}</td>
 
-                  <td>{record.timeOut || "-"}</td>
+                  <td>
+                    <TimeOutValue record={record} />
+                  </td>
 
                   <td>{record.totalHours || 0}</td>
 

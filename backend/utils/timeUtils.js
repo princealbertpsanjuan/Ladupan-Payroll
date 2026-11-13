@@ -46,9 +46,20 @@ const isValidTime = (value) => {
   return typeof value === "string" && /^([01]\d|2[0-3]):[0-5]\d$/.test(value);
 };
 
+// "2026-11-13" + n days -> "2026-11-14"
+const addDays = (date, days) => {
+  const value = new Date(`${date}T00:00:00Z`);
+  value.setUTCDate(value.getUTCDate() + days);
+  return value.toISOString().slice(0, 10);
+};
+
+const getYesterday = () => addDays(getToday(), -1);
+
 module.exports = {
   TIMEZONE,
   getToday,
+  getYesterday,
+  addDays,
   getCurrentTime,
   isValidDate,
   isValidTime,

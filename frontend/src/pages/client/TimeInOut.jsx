@@ -4,6 +4,7 @@ import { useToast } from "../../context/ToastContext";
 import StatusBadge from "../../components/StatusBadge";
 import Spinner from "../../components/Spinner";
 import Icon from "../../components/Icon";
+import TimeOutValue from "../../components/TimeOutValue";
 import { formatMoney, formatMinutes } from "../../utils/format";
 import "../../styles/timeinout.css";
 
@@ -14,7 +15,12 @@ const TimeInOut = () => {
   const setMessage = ({ type, text }) => {
     if (text) toast[type](text);
   };
+  // attendance = today's record; openShift = the shift that can be timed
+  // out now (today's, or last night's for a night shift); lastClosed = the
+  // shift just completed, shown until the next refresh
   const [attendance, setAttendance] = useState(null);
+  const [openShift, setOpenShift] = useState(null);
+  const [lastClosed, setLastClosed] = useState(null);
   const [serverDate, setServerDate] = useState("");
   const [loading, setLoading] = useState(false);
   const [busyAction, setBusyAction] = useState("");
@@ -48,6 +54,7 @@ const TimeInOut = () => {
       setChecking(true);
       const res = await api.get("/attendance/today");
       setAttendance(res.data.attendance);
+      setOpenShift(res.data.openShift || null);
       setServerDate(res.data.date);
     } catch (error) {
       console.error("Error fetching attendance:", error);
@@ -62,6 +69,8 @@ const TimeInOut = () => {
       setBusyAction("in");
 
       const res = await api.post("/attendance/time-in");
+      setLastClosed(null);
+      setOpenShift(res.data.attendance);
 
       setMessage({
         type: res.data.attendance?.remarks === "Absent" ? "warning" : "success",
@@ -87,9 +96,11 @@ const TimeInOut = () => {
       setBusyAction("out");
 
       const res = await api.put("/attendance/time-out");
+      setOpenShift(null);
+      setLastClosed(res.data.attendance);
 
       setMessage({ type: "success", text: res.data.message });
-      setAttendance(res.data.attendance);
+      if (res.data.attendance?.date === serverDate) setAttendance(res.data.attendance);
     } catch (err) {
       if (err.response?.data?.code === "OUTSIDE_SHOP_NETWORK") fetchNetworkStatus();
 
@@ -104,8 +115,14 @@ const TimeInOut = () => {
   };
 
   const offNetwork = Boolean(network?.restricted && !network?.allowed);
-  const hasTimedIn = Boolean(attendance?.timeIn);
-  const hasTimedOut = Boolean(attendance?.timeOut);
+  // Record shown in the cards: the open shift, else today's, else the
+  // shift just completed
+  const shown = openShift || attendance || lastClosed;
+  const canTimeIn = !attendance && !openShift;
+  const canTimeOut = Boolean(openShift);
+  const hasTimedIn = Boolean(attendance?.timeIn || openShift);
+  const hasTimedOut = Boolean(attendance?.timeOut) && !openShift;
+  const onShiftFromYesterday = Boolean(openShift && openShift.date !== serverDate);
 
   const today = new Date().toLocaleDateString("en-US", {
     weekday: "long",
@@ -165,7 +182,7 @@ const TimeInOut = () => {
           <button
             className="time-in-btn"
             onClick={handleTimeIn}
-            disabled={loading || checking || hasTimedIn || offNetwork}
+            disabled={loading || checking || !canTimeIn || offNetwork}
             aria-busy={busyAction === "in"}
           >
             {busyAction === "in" && <Spinner />}
@@ -175,13 +192,27 @@ const TimeInOut = () => {
           <button
             className="time-out-btn"
             onClick={handleTimeOut}
-            disabled={loading || checking || !hasTimedIn || hasTimedOut || offNetwork}
+            disabled={loading || checking || !canTimeOut || offNetwork}
             aria-busy={busyAction === "out"}
           >
             {busyAction === "out" && <Spinner />}
             {busyAction === "out" ? "Recording..." : hasTimedOut ? "Timed Out ✓" : "Time Out"}
           </button>
         </div>
+
+        {onShiftFromYesterday && (
+          <div className="attendance-message lp-alert info">
+            You're on a shift that started <strong>{openShift.date}</strong> at{" "}
+            <strong>{openShift.timeIn}</strong>. Tap <strong>Time Out</strong> when you finish.
+          </div>
+        )}
+
+        {!checking && !attendance && !openShift && lastClosed?.timeOutNextDay && (
+          <div className="attendance-message lp-alert success">
+            Your shift from {lastClosed.date} {lastClosed.timeIn} is complete ({lastClosed.totalHours} hrs).
+            You can time in again for your next shift.
+          </div>
+        )}
 
         {!checking && hasTimedIn && hasTimedOut && (
           <div className="attendance-message lp-alert info">
@@ -193,43 +224,45 @@ const TimeInOut = () => {
         <div className="attendance-info-grid">
           <div className="attendance-info-card">
             <span>Date</span>
-            <strong>{attendance?.date || serverDate || "No record"}</strong>
+            <strong>{shown?.date || serverDate || "No record"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Time In</span>
-            <strong>{attendance?.timeIn || "Not yet"}</strong>
+            <strong>{shown?.timeIn || "Not yet"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Time Out</span>
-            <strong>{attendance?.timeOut || "Not yet"}</strong>
+            <strong>
+              <TimeOutValue record={shown} empty="Not yet" />
+            </strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Required Time In</span>
-            <strong>{attendance?.requiredTimeIn || "-"}</strong>
+            <strong>{shown?.requiredTimeIn || "-"}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Total Hours</span>
-            <strong>{attendance?.totalHours || 0}</strong>
+            <strong>{shown?.totalHours || 0}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Gross Pay</span>
-            <strong>{formatMoney(attendance?.grossPay)}</strong>
+            <strong>{formatMoney(shown?.grossPay)}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Late</span>
-            <strong>{formatMinutes(attendance?.lateMinutes)}</strong>
+            <strong>{formatMinutes(shown?.lateMinutes)}</strong>
           </div>
 
           <div className="attendance-info-card">
             <span>Remarks</span>
             <strong>
-              {attendance ? <StatusBadge record={attendance} /> : "No record yet"}
+              {shown ? <StatusBadge record={shown} /> : "No record yet"}
             </strong>
           </div>
         </div>

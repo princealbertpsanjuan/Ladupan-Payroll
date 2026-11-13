@@ -6,6 +6,7 @@ import { formatMinutes } from "../../utils/format";
 import useFlipList from "../../hooks/useFlipList";
 import "../../styles/archives.css";
 import { SkeletonRows } from "../../components/Skeleton";
+import TimeOutValue from "../../components/TimeOutValue";
 
 const VIEW_STORAGE_KEY = "lp-archives-view";
 
@@ -167,7 +168,9 @@ const Archives = () => {
         {record.timeIn || "-"}
         {record.requiredTimeIn && <div className="lp-muted">Required {record.requiredTimeIn}</div>}
       </td>
-      <td>{record.timeOut || "-"}</td>
+      <td>
+        <TimeOutValue record={record} />
+      </td>
       <td>{record.totalHours || 0}</td>
       <td>{formatMoney(record.grossPay)}</td>
       <td>{formatMinutes(record.lateMinutes)}</td>

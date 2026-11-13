@@ -7,6 +7,7 @@ import { formatMinutes } from "../../utils/format";
 import useFlipList from "../../hooks/useFlipList";
 import "../../styles/myarchives.css";
 import { SkeletonRows } from "../../components/Skeleton";
+import TimeOutValue from "../../components/TimeOutValue";
 
 const COLUMN_COUNT = 8;
 
@@ -299,7 +300,9 @@ const MyArchives = () => {
                           {record.timeIn || "-"}
                           <div className="lp-muted">Required {record.requiredTimeIn || "-"}</div>
                         </td>
-                        <td>{record.timeOut || "-"}</td>
+                        <td>
+                          <TimeOutValue record={record} />
+                        </td>
                         <td>{record.totalHours || 0}</td>
                         <td>{formatMoney(record.grossPay)}</td>
                         <td>{formatMinutes(record.lateMinutes)}</td>

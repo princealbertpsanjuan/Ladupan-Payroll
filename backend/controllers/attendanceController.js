@@ -3,9 +3,15 @@ const User = require("../models/User");
 const {
   applyAttendanceRules,
   timeToMinutes,
+  validateShiftTimes,
+  crossesMidnight,
+  MAX_SHIFT_MINUTES,
+  MAX_SHIFT_HOURS,
 } = require("../utils/attendanceRules");
 const {
   getToday,
+  getYesterday,
+  addDays,
   getCurrentTime,
   isValidDate,
   isValidTime,
@@ -24,22 +30,72 @@ const snapshot = (record) => ({
   remarks: record.remarks,
 });
 
-const validateTimes = (timeIn, timeOut) => {
+// Checks a time-in / time-out pair for a record dated `date`.
+// A time-out earlier than the time-in is the next day (night shift).
+const validateTimes = (timeIn, timeOut, date) => {
   if (!isValidTime(timeIn)) {
     return "Time in must be a valid time (HH:mm)";
   }
 
-  if (timeOut) {
-    if (!isValidTime(timeOut)) {
-      return "Time out must be a valid time (HH:mm)";
+  if (timeOut && !isValidTime(timeOut)) {
+    return "Time out must be a valid time (HH:mm)";
+  }
+
+  const shiftError = validateShiftTimes(timeIn, timeOut);
+  if (shiftError) return shiftError;
+
+  // Nothing may be recorded later than right now
+  if (date) {
+    const now = `${getToday()} ${getCurrentTime()}`;
+
+    if (`${date} ${timeIn}` > now) {
+      return "Time in can't be later than the current time";
     }
 
-    if (timeToMinutes(timeOut) <= timeToMinutes(timeIn)) {
-      return "Time out must be later than time in";
+    if (timeOut) {
+      const outDate = crossesMidnight(timeIn, timeOut) ? addDays(date, 1) : date;
+
+      if (`${outDate} ${timeOut}` > now) {
+        return `Time out can't be later than the current time (${getCurrentTime()}${outDate !== getToday() ? ` on ${getToday()}` : ""})`;
+      }
     }
   }
 
   return null;
+};
+
+// Minutes since a shift that started YESTERDAY at timeIn
+const minutesSinceYesterday = (timeIn, now) =>
+  24 * 60 - timeToMinutes(timeIn) + timeToMinutes(now);
+
+// The shift the employee can time out of right now:
+// - today's record with a time-in and no time-out, or
+// - yesterday's record still open, if it started at most 16 hours ago
+//   (night shift, e.g. 18:00 yesterday -> 06:00 today)
+const findOpenShift = async (employeeId) => {
+  const now = getCurrentTime();
+
+  const todayRecord = await Attendance.findOne({ employee: employeeId, date: getToday() });
+
+  if (todayRecord?.timeIn && !todayRecord.timeOut) {
+    return { openShift: todayRecord, todayRecord };
+  }
+
+  const yesterdayRecord = await Attendance.findOne({
+    employee: employeeId,
+    date: getYesterday(),
+  });
+
+  if (
+    yesterdayRecord?.timeIn &&
+    !yesterdayRecord.timeOut &&
+    !yesterdayRecord.isArchived &&
+    minutesSinceYesterday(yesterdayRecord.timeIn, now) <= MAX_SHIFT_MINUTES
+  ) {
+    return { openShift: yesterdayRecord, todayRecord };
+  }
+
+  return { openShift: null, todayRecord };
 };
 
 // EMPLOYEE TIME IN (once per day)
@@ -49,14 +105,17 @@ exports.timeIn = async (req, res) => {
     const today = getToday();
     const currentTime = getCurrentTime();
 
-    const existingAttendance = await Attendance.findOne({
-      employee: employee._id,
-      date: today,
-    });
+    const { openShift, todayRecord } = await findOpenShift(employee._id);
 
-    if (existingAttendance) {
+    if (todayRecord) {
       return res.status(400).json({
         message: "You have already timed in today",
+      });
+    }
+
+    if (openShift) {
+      return res.status(400).json({
+        message: `You're still timed in from your shift that started ${openShift.date} at ${openShift.timeIn}. Time out first.`,
       });
     }
 
@@ -98,29 +157,34 @@ exports.timeIn = async (req, res) => {
 exports.timeOut = async (req, res) => {
   try {
     const employee = req.user;
-    const today = getToday();
     const currentTime = getCurrentTime();
 
-    const attendance = await Attendance.findOne({
-      employee: employee._id,
-      date: today,
-    });
+    const { openShift: attendance, todayRecord } = await findOpenShift(employee._id);
 
-    if (!attendance || !attendance.timeIn) {
-      return res.status(400).json({
-        message: "You must time in first before timing out",
+    if (!attendance) {
+      if (todayRecord?.timeOut) {
+        return res.status(400).json({
+          message: "You have already timed out today",
+        });
+      }
+
+      const yesterdayOpen = await Attendance.findOne({
+        employee: employee._id,
+        date: getYesterday(),
+        timeIn: { $ne: null },
+        timeOut: null,
       });
-    }
 
-    if (attendance.timeOut) {
       return res.status(400).json({
-        message: "You have already timed out today",
+        message: yesterdayOpen
+          ? `Your shift from ${yesterdayOpen.date} (${yesterdayOpen.timeIn}) is over ${MAX_SHIFT_HOURS} hours old, so it can't be closed here. Send a DTR correction request with your actual time out.`
+          : "You must time in first before timing out",
       });
     }
 
     if (attendance.isArchived) {
       return res.status(400).json({
-        message: "Today's record is already included in a payroll",
+        message: "This record is already included in a payroll",
       });
     }
 
@@ -130,7 +194,9 @@ exports.timeOut = async (req, res) => {
     await attendance.save();
 
     res.json({
-      message: "Time out successful",
+      message: attendance.timeOutNextDay
+        ? `Time out successful. Your shift from ${attendance.date} ${attendance.timeIn} is complete (${attendance.totalHours} hrs).`
+        : "Time out successful",
       attendance,
     });
   } catch (error) {
@@ -146,15 +212,15 @@ exports.getMyToday = async (req, res) => {
   try {
     const today = getToday();
 
-    const attendance = await Attendance.findOne({
-      employee: req.user._id,
-      date: today,
-    });
+    const { openShift, todayRecord } = await findOpenShift(req.user._id);
 
     res.json({
       date: today,
       currentTime: getCurrentTime(),
-      attendance,
+      // Today's record (if the employee timed in today)
+      attendance: todayRecord,
+      // Shift that can be timed out now: today's or last night's
+      openShift,
     });
   } catch (error) {
     res.status(500).json({
@@ -248,7 +314,7 @@ exports.createAttendance = async (req, res) => {
       });
     }
 
-    const timeError = validateTimes(timeIn, timeOut || null);
+    const timeError = validateTimes(timeIn, timeOut || null, date);
 
     if (timeError) {
       return res.status(400).json({ message: timeError });
@@ -375,7 +441,7 @@ exports.updateAttendance = async (req, res) => {
       });
     }
 
-    const timeError = validateTimes(nextTimeIn, nextTimeOut);
+    const timeError = validateTimes(nextTimeIn, nextTimeOut, nextDate);
 
     if (timeError) {
       return res.status(400).json({ message: timeError });

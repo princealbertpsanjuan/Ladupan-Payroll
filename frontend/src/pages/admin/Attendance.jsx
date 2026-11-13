@@ -9,6 +9,7 @@ import useSort from "../../hooks/useSort";
 import useFlipList from "../../hooks/useFlipList";
 import StatusBadge from "../../components/StatusBadge";
 import Icon from "../../components/Icon";
+import TimeOutValue from "../../components/TimeOutValue";
 import {
   formatMoney,
   formatDate,
@@ -317,7 +318,9 @@ const Attendance = () => {
           )}
         </div>
       </td>
-      <td>{record.timeOut || "-"}</td>
+      <td>
+        <TimeOutValue record={record} />
+      </td>
       <td>{record.totalHours || 0}</td>
       <td>
         {formatMoney(record.grossPay)}
@@ -623,7 +626,9 @@ const Attendance = () => {
 
               <p className="lp-muted">
                 Remarks, hours, and pay are calculated automatically from the
-                required time-in above and the employee's hourly rate.
+                required time-in above and the employee's hourly rate. Night
+                shift: a time out earlier than the time in (e.g. 18:00 → 06:00)
+                counts as the next day.
               </p>
 
               <div className="modal-actions">
