@@ -75,6 +75,29 @@ npm run clean-db -- --confirm  # backs up to backend/backups/, then deletes
 The backup folder holds passwords (hashed) and salary data. It is ignored by
 git; keep it private and delete it once you no longer need it.
 
+## Deployment (Render + Vercel + MongoDB Atlas)
+
+**Backend on Render** (Web Service): root directory `backend`, build command
+`npm install`, start command `npm start`. Environment variables:
+
+| Variable | Value |
+| --- | --- |
+| `MONGO_URI` | Atlas connection string |
+| `JWT_SECRET` | long random string |
+| `FRONTEND_URL` | your Vercel address, e.g. `https://ladupan-payroll.vercel.app` |
+| `CLIENT_IP_HEADER` | `true-client-ip` (real visitor IP for the shop network check) |
+| `APP_TIMEZONE` | `Asia/Manila` |
+
+**Frontend on Vercel**: root directory `frontend`, framework Vite. Environment
+variable `VITE_API_URL` = `https://<your-render-service>.onrender.com/api`.
+`frontend/vercel.json` makes page refreshes on routes like `/admin/payroll` work.
+
+**Atlas**: Network Access must allow Render to connect (`0.0.0.0/0`, since
+Render's free plan has no fixed IP).
+
+After deploying, open Shop Network at each shop and check that "Connected
+from" matches the shop's public IP (search "what is my ip" on the same Wi-Fi).
+
 ## Rules
 
 ### Attendance

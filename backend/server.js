@@ -30,7 +30,27 @@ if (process.env.TRUST_PROXY) {
   app.set("trust proxy", /^\d+$/.test(value) ? Number(value) : value);
 }
 
-app.use(cors());
+// Only the deployed frontend may call the API. FRONTEND_URL can list
+// several origins separated by commas. When it is not set (local
+// development), every origin is allowed.
+const allowedOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+app.use(
+  cors(
+    allowedOrigins.length > 0
+      ? {
+          origin: (origin, callback) => {
+            // Requests without an Origin (curl, health checks) are allowed
+            if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+            return callback(null, false);
+          },
+        }
+      : undefined
+  )
+);
 app.use(express.json());
 
 // Express 5 leaves req.body undefined when a request has no JSON body

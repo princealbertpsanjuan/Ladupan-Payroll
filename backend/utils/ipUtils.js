@@ -17,10 +17,24 @@ const normalizeIp = (ip) => {
   return value.toLowerCase();
 };
 
-// The address the request came from. Uses Express's req.ip, which only
-// trusts X-Forwarded-For when "trust proxy" is configured (see server.js),
-// so employees cannot fake the shop's address with a header.
-const getClientIp = (req) => normalizeIp(req.ip || req.socket?.remoteAddress || "");
+// The address the request came from.
+// - CLIENT_IP_HEADER set (e.g. "true-client-ip" on Render): read the real
+//   visitor IP from that header. Render sits behind Cloudflare, which sets
+//   True-Client-IP itself, so visitors cannot fake it. Only set this when
+//   your host guarantees the header.
+// - Otherwise: Express's req.ip, which only trusts X-Forwarded-For when
+//   TRUST_PROXY is configured (see server.js).
+const getClientIp = (req) => {
+  const headerName = (process.env.CLIENT_IP_HEADER || "").trim().toLowerCase();
+
+  if (headerName) {
+    const value = req.headers?.[headerName];
+    const first = Array.isArray(value) ? value[0] : String(value || "").split(",")[0];
+    if (first && first.trim()) return normalizeIp(first);
+  }
+
+  return normalizeIp(req.ip || req.socket?.remoteAddress || "");
+};
 
 const ipv4ToNumber = (ip) => {
   const parts = ip.split(".");
