@@ -3,6 +3,8 @@ import { NavLink, Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useAuth } from "../context/AuthContext";
 import logo from "../assets/ladupan-logo.png";
 import Icon from "./Icon";
+import NotificationPanel from "./NotificationPanel";
+import useNotifications from "../hooks/useNotifications";
 import { DURATION, EASING, prefersReducedMotion } from "../utils/motion";
 import "../styles/layout.css";
 
@@ -34,6 +36,10 @@ const AppShell = ({ navItems, subtitle }) => {
 
   const [collapsed, setCollapsed] = useState(readCollapsed);
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const notificationState = useNotifications();
+  const { unreadCount } = notificationState;
+  const closeNotifications = useCallback(() => setNotificationsOpen(false), []);
   const [indicator, setIndicator] = useState({ y: 0, height: 0, width: 0, visible: false });
   const [indicatorReady, setIndicatorReady] = useState(false);
 
@@ -108,9 +114,10 @@ const AppShell = ({ navItems, subtitle }) => {
     );
   }, [collapsed]);
 
-  // Close the mobile drawer after navigating
+  // Close the mobile drawer and notification panel after navigating
   useEffect(() => {
     setDrawerOpen(false);
+    setNotificationsOpen(false);
   }, [location.pathname]);
 
   // Escape closes the drawer
@@ -146,6 +153,20 @@ const AppShell = ({ navItems, subtitle }) => {
         <img src={logo} alt="" className="mobile-topbar-logo" />
         <strong>Ladupan</strong>
         <span className="mobile-topbar-sub">{subtitle}</span>
+
+        <button
+          type="button"
+          className="shell-icon-btn mobile-bell"
+          aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
+          aria-expanded={notificationsOpen}
+          data-notification-trigger
+          onClick={() => setNotificationsOpen((value) => !value)}
+        >
+          <Icon name="bell" />
+          {unreadCount > 0 && (
+            <span className="notification-badge">{unreadCount > 99 ? "99+" : unreadCount}</span>
+          )}
+        </button>
       </header>
 
       <div
@@ -208,6 +229,27 @@ const AppShell = ({ navItems, subtitle }) => {
 
           <button
             type="button"
+            className="sidebar-action notification-trigger"
+            aria-label={`Notifications${unreadCount ? `, ${unreadCount} unread` : ""}`}
+            aria-expanded={notificationsOpen}
+            data-notification-trigger
+            title={collapsed ? "Notifications" : undefined}
+            onClick={() => setNotificationsOpen((value) => !value)}
+          >
+            <span className="sidebar-bell-icon">
+              <Icon name="bell" />
+              <span className={`notification-dot-mini${unreadCount ? " has-unread" : ""}`} />
+            </span>
+            <span className="nav-label sidebar-fade">Notifications</span>
+            {unreadCount > 0 && (
+              <span className="notification-badge sidebar-fade">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </button>
+
+          <button
+            type="button"
             className="sidebar-action collapse-toggle"
             onClick={() => setCollapsed((value) => !value)}
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
@@ -228,6 +270,12 @@ const AppShell = ({ navItems, subtitle }) => {
           </button>
         </div>
       </aside>
+
+      <NotificationPanel
+        open={notificationsOpen}
+        onClose={closeNotifications}
+        {...notificationState}
+      />
 
       <main ref={mainRef} className="main-content">
         <div key={location.pathname} className="page-transition">

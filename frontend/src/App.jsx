@@ -12,6 +12,7 @@ import Archives from "./pages/admin/Archives";
 import Corrections from "./pages/admin/Corrections";
 import CashAdvances from "./pages/admin/CashAdvances";
 import AuditLog from "./pages/admin/AuditLog";
+import ShopNetwork from "./pages/admin/ShopNetwork";
 
 // CLIENT PAGES
 import ClientDashboard from "./pages/client/ClientDashboard";
@@ -61,6 +62,7 @@ function App() {
           <Route path="/admin/corrections" element={<Corrections />} />
           <Route path="/admin/cash-advances" element={<CashAdvances />} />
           <Route path="/admin/audit-log" element={<AuditLog />} />
+          <Route path="/admin/settings" element={<ShopNetwork />} />
           <Route
             path="/admin/payslip/:reportId/:employeeId"
             element={<PayslipPage admin />}

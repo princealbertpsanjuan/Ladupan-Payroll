@@ -10,6 +10,7 @@ const ADMIN_NAV = [
   { to: "/admin/reports", label: "Reports", icon: "report" },
   { to: "/admin/archives", label: "Archives", icon: "archive" },
   { to: "/admin/audit-log", label: "Audit Log", icon: "shield" },
+  { to: "/admin/settings", label: "Shop Network", icon: "wifi" },
 ];
 
 const AdminLayout = () => <AppShell navItems={ADMIN_NAV} subtitle="Admin Panel" />;

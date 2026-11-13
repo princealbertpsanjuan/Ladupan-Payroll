@@ -13,11 +13,44 @@ const payslipRoutes = require("./routes/payslipRoutes");
 const correctionRoutes = require("./routes/correctionRoutes");
 const cashAdvanceRoutes = require("./routes/cashAdvanceRoutes");
 const auditLogRoutes = require("./routes/auditLogRoutes");
+const settingsRoutes = require("./routes/settingsRoutes");
+const notificationRoutes = require("./routes/notificationRoutes");
 
 
 const app = express();
 
-app.use(cors());
+// Which client IP to trust (used by the shop network restriction).
+// - Not set (default): use the direct connection's address. Correct when
+//   the backend runs on a shop computer or is reached directly.
+// - Hosted behind a proxy (Render, Railway, Nginx): set TRUST_PROXY=1 so
+//   the real visitor IP from the proxy is used.
+// Never trust X-Forwarded-For blindly: anyone could fake the shop's IP.
+if (process.env.TRUST_PROXY) {
+  const value = process.env.TRUST_PROXY;
+  app.set("trust proxy", /^\d+$/.test(value) ? Number(value) : value);
+}
+
+// Only the deployed frontend may call the API. FRONTEND_URL can list
+// several origins separated by commas. When it is not set (local
+// development), every origin is allowed.
+const allowedOrigins = (process.env.FRONTEND_URL || "")
+  .split(",")
+  .map((origin) => origin.trim().replace(/\/$/, ""))
+  .filter(Boolean);
+
+app.use(
+  cors(
+    allowedOrigins.length > 0
+      ? {
+          origin: (origin, callback) => {
+            // Requests without an Origin (curl, health checks) are allowed
+            if (!origin || allowedOrigins.includes(origin)) return callback(null, true);
+            return callback(null, false);
+          },
+        }
+      : undefined
+  )
+);
 app.use(express.json());
 
 // Express 5 leaves req.body undefined when a request has no JSON body
@@ -37,6 +70,8 @@ app.use("/api/payslips", payslipRoutes);
 app.use("/api/corrections", correctionRoutes);
 app.use("/api/cash-advances", cashAdvanceRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
+app.use("/api/settings", settingsRoutes);
+app.use("/api/notifications", notificationRoutes);
 
 
 

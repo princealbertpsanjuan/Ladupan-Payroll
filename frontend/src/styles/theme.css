@@ -1564,3 +1564,437 @@ table td {
 .status {
   text-transform: none;
 }
+
+/* My Account: long values (emails) wrap inside their tile */
+.account-info-box {
+  min-width: 0;
+}
+
+.account-info-box strong {
+  display: block;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  line-height: 1.35;
+}
+
+.profile-section p {
+  overflow-wrap: anywhere;
+}
+
+.profile-avatar {
+  background: var(--brand) !important;
+  color: #fff;
+}
+
+/* Section title as the first thing in a card: no extra top gap */
+.myaccount-card > .settings-title:first-child,
+.lp-card > .section-title:first-child {
+  margin-top: 0;
+}
+
+/* --------------------------------------------------------------------------
+   Attendance grouped by employee
+   -------------------------------------------------------------------------- */
+
+.view-switch {
+  display: inline-flex;
+  padding: 3px;
+  border-radius: var(--radius-md);
+  background: var(--surface-3);
+  border: 1px solid var(--border);
+  margin-left: auto;
+}
+
+.view-switch button {
+  min-height: 32px;
+  padding: 0 12px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text-2);
+  font: 600 13px/1 var(--font-sans);
+  cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-standard);
+}
+
+.view-switch button:active {
+  transform: scale(0.97);
+}
+
+.view-switch button.active {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: var(--shadow-xs);
+}
+
+.employee-group + .employee-group .group-row > td {
+  border-top: 10px solid var(--surface);
+}
+
+tbody tr.group-row {
+  animation-delay: 0ms;
+}
+
+.group-row > td {
+  padding: 10px 12px !important;
+  background: var(--surface-2) !important;
+  border-bottom: 1px solid var(--border) !important;
+}
+
+.group-row > td::before {
+  display: none;
+}
+
+.group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+
+.group-toggle {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 6px 4px 2px;
+  border: none;
+  border-radius: 8px;
+  background: transparent;
+  color: var(--text);
+  text-align: left;
+  cursor: pointer;
+  transition: transform var(--dur-micro) var(--ease-standard);
+}
+
+.group-toggle:active {
+  transform: scale(0.99);
+}
+
+.group-toggle:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.group-chevron {
+  color: var(--text-3);
+  transition: transform var(--dur-standard) var(--ease-standard);
+}
+
+.group-toggle[aria-expanded="false"] .group-chevron {
+  transform: rotate(-90deg);
+}
+
+.group-avatar {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  background: var(--brand);
+  color: #fff;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.group-name {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.3;
+}
+
+.group-name strong {
+  font-size: 14px;
+  font-weight: 650;
+}
+
+.group-name span {
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.group-stats {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex-wrap: wrap;
+  font-size: 13px;
+  color: var(--text-2);
+}
+
+.group-stats strong {
+  color: var(--text);
+  font-weight: 650;
+}
+
+.link-btn {
+  padding: 0;
+  border: none;
+  background: none;
+  color: var(--text);
+  font: inherit;
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+/* Per-day schedule change */
+.lp-field-note {
+  margin: -4px 0 10px;
+  font-size: 12px;
+  color: var(--text-3);
+}
+
+.lp-field-note.is-changed {
+  color: var(--warning);
+}
+
+.adjusted-tag {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--warning-bg);
+  color: var(--warning);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+}
+
+/* --------------------------------------------------------------------------
+   Shop Network settings
+   -------------------------------------------------------------------------- */
+
+.network-status-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-5);
+}
+
+.network-status-card.is-on {
+  border-color: var(--brand);
+}
+
+.network-status-main {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.network-status-main h2 {
+  margin-bottom: 4px;
+}
+
+.network-status-main p {
+  color: var(--text-2);
+  max-width: 620px;
+}
+
+/* On/off switch: the knob moves with transform */
+.lp-switch {
+  position: relative;
+  flex-shrink: 0;
+  width: 52px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: var(--border-strong);
+  cursor: pointer;
+  isolation: isolate;
+  overflow: hidden;
+}
+
+.lp-switch::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: inherit;
+  background: var(--brand);
+  opacity: 0;
+  transition: opacity var(--dur-standard) var(--ease-standard);
+}
+
+.lp-switch.is-on::before {
+  opacity: 1;
+}
+
+.lp-switch-knob {
+  position: absolute;
+  top: 3px;
+  left: 3px;
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: #fff;
+  color: var(--text-2);
+  box-shadow: 0 1px 3px rgba(12, 10, 9, 0.25);
+  transition: transform var(--dur-standard) var(--ease-standard);
+}
+
+.lp-switch-knob .btn-spinner {
+  width: 12px;
+  height: 12px;
+}
+
+.lp-switch.is-on .lp-switch-knob {
+  transform: translateX(22px);
+}
+
+.lp-switch:active .lp-switch-knob {
+  transform: scale(0.92);
+}
+
+.lp-switch.is-on:active .lp-switch-knob {
+  transform: translateX(22px) scale(0.92);
+}
+
+.lp-switch:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.lp-switch:focus-visible {
+  outline: 2px solid var(--brand);
+  outline-offset: 2px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.current-network {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-4);
+  flex-wrap: wrap;
+  padding: var(--space-4);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  background: var(--surface-2);
+}
+
+.current-network > div:first-child {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.current-ip {
+  font-size: 18px;
+  font-weight: 650;
+  font-variant-numeric: tabular-nums;
+}
+
+.current-network-add {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.current-network-add input {
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font: 14px var(--font-sans);
+}
+
+.manual-network {
+  margin-top: var(--space-4);
+}
+
+.manual-network summary {
+  cursor: pointer;
+  font-weight: 600;
+  font-size: 14px;
+  color: var(--text-2);
+}
+
+.manual-network-form {
+  margin-top: var(--space-3);
+  align-items: end;
+  grid-template-columns: 1.2fr 1fr auto;
+}
+
+@media (max-width: 760px) {
+  .network-status-card {
+    align-items: flex-start;
+  }
+
+  .manual-network-form {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* Time In / Out network banner */
+.network-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+}
+
+.network-banner .lp-icon {
+  flex-shrink: 0;
+  margin-top: 1px;
+}
+
+.network-ok {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-bottom: var(--space-4);
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--success-bg);
+  color: var(--success);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.lp-badge.no-caps {
+  text-transform: none;
+}
+
+.deleted-tag {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 0 6px;
+  border-radius: 999px;
+  background: var(--surface-3);
+  color: var(--text-3);
+  font-size: 11px;
+  font-weight: 600;
+  line-height: 1.6;
+  vertical-align: middle;
+}
+
+/* Payroll period folders */
+.group-avatar.period-icon {
+  background: var(--surface);
+  color: var(--text);
+  box-shadow: inset 0 0 0 1px var(--border-strong);
+}
+
+.group-toggle:disabled {
+  cursor: default;
+}
+
+.group-toggle:disabled .group-chevron {
+  opacity: 0.35;
+}

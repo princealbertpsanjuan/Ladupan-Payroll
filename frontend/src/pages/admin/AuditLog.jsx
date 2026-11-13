@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import api from "../../api/axios";
 import { formatDateTime } from "../../utils/format";
 import { SkeletonRows } from "../../components/Skeleton";
@@ -23,6 +24,11 @@ const ACTION_LABELS = {
   CORRECTION_CANCELLED: "Correction cancelled",
   CORRECTION_APPROVED: "Correction approved",
   CORRECTION_REJECTED: "Correction rejected",
+  ATTENDANCE_BLOCKED_NETWORK: "Blocked: outside shop network",
+  NETWORK_RESTRICTION_ON: "Shop network restriction on",
+  NETWORK_RESTRICTION_OFF: "Shop network restriction off",
+  NETWORK_ADDED: "Allowed network added",
+  NETWORK_REMOVED: "Allowed network removed",
 };
 
 const actionLabel = (action) => ACTION_LABELS[action] || action;
@@ -35,9 +41,11 @@ const AuditLog = () => {
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
 
+  const [searchParams] = useSearchParams();
+
   const [filters, setFilters] = useState({
     search: "",
-    action: "",
+    action: searchParams.get("action") || "",
     from: "",
     to: "",
   });

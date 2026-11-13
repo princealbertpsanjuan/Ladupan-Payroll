@@ -15,10 +15,13 @@ const {
 
 const { protect, adminOnly } = require("../middleware/authMiddleware");
 const { employeeOnly } = require("../middleware/roleMiddleware");
+const { requireShopNetwork } = require("../middleware/networkGuard");
 
 // EMPLOYEE
-router.post("/time-in", protect, employeeOnly, timeIn);
-router.put("/time-out", protect, employeeOnly, timeOut);
+// Time in / out only from the shop network (when the admin turns it on).
+// Viewing records below is allowed from anywhere.
+router.post("/time-in", protect, employeeOnly, requireShopNetwork("time in"), timeIn);
+router.put("/time-out", protect, employeeOnly, requireShopNetwork("time out"), timeOut);
 
 router.get("/today", protect, employeeOnly, getMyToday);
 router.get("/my-records", protect, employeeOnly, getMyAttendance);
