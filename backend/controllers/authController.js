@@ -205,3 +205,61 @@ exports.changePassword = async (req, res) => {
     });
   }
 };
+
+// CHANGE OWN EMAIL (requires the current password)
+exports.changeEmail = async (req, res) => {
+  try {
+    const { newEmail, currentPassword } = req.body;
+    const email = String(newEmail || "").trim().toLowerCase();
+
+    if (!email || !currentPassword) {
+      return res.status(400).json({
+        message: "New email and current password are required",
+      });
+    }
+
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+      return res.status(400).json({ message: "Please enter a valid email address" });
+    }
+
+    const user = await User.findById(req.user._id);
+
+    const isMatch = await bcrypt.compare(currentPassword, user.password);
+
+    if (!isMatch) {
+      return res.status(400).json({ message: "Current password is incorrect" });
+    }
+
+    if (email === String(user.email).toLowerCase()) {
+      return res.status(400).json({ message: "This is already your email address" });
+    }
+
+    const taken = await User.findOne({
+      _id: { $ne: user._id },
+      email: { $in: [String(newEmail).trim(), email] },
+    });
+
+    if (taken) {
+      return res.status(400).json({ message: "Another account already uses this email" });
+    }
+
+    const oldEmail = user.email;
+    user.email = email;
+    await user.save();
+
+    await logAudit(req, {
+      action: "EMAIL_CHANGED",
+      entityType: "Employee",
+      entityId: user._id,
+      description: `${user.firstName} ${user.lastName} changed their login email`,
+      details: { changes: { email: { from: oldEmail, to: email } } },
+    });
+
+    res.json({ message: "Email changed successfully", user: toUserResponse(user) });
+  } catch (error) {
+    res.status(500).json({
+      message: "Failed to change email",
+      error: error.message,
+    });
+  }
+};

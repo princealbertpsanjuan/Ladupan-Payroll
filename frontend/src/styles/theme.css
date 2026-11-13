@@ -1998,3 +1998,25 @@ tbody tr.group-row {
 .group-toggle:disabled .group-chevron {
   opacity: 0.35;
 }
+
+/* Admin My Account */
+.account-forms {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--space-5);
+  align-items: start;
+}
+
+.account-forms .lp-card {
+  margin-bottom: 0;
+}
+
+.wrap-anywhere {
+  overflow-wrap: anywhere;
+}
+
+@media (max-width: 900px) {
+  .account-forms {
+    grid-template-columns: 1fr;
+  }
+}

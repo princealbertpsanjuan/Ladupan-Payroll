@@ -14,6 +14,7 @@ const ACTION_LABELS = {
   EMPLOYEE_PASSWORD_RESET: "Password reset by admin",
   EMPLOYEE_DELETED: "Employee deleted",
   PASSWORD_CHANGED: "Password changed",
+  EMAIL_CHANGED: "Email changed",
   ATTENDANCE_CREATED: "DTR added",
   ATTENDANCE_UPDATED: "DTR edited",
   ATTENDANCE_DELETED: "DTR deleted",
