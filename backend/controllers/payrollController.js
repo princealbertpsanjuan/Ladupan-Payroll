@@ -3,7 +3,7 @@ const Attendance = require("../models/Attendance");
 const PayrollReport = require("../models/PayrollReport");
 const CashAdvance = require("../models/CashAdvance");
 const User = require("../models/User");
-const { isIncomplete, roundMoney } = require("../utils/attendanceRules");
+const { isIncomplete, roundMoney, needsOvertimeReview } = require("../utils/attendanceRules");
 const { getBalances } = require("../utils/cashAdvanceUtils");
 const { isValidDate, getToday } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
@@ -46,6 +46,8 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
   // Off-network Time In / Time Out requests not approved yet: left out of
   // this payroll (they stay active and count once approved)
   const pendingRecords = [];
+  // Overtime not reviewed yet: paid only up to the scheduled end for now
+  const overtimeRecords = [];
 
   for (const employee of employees) {
     const allRecords = await Attendance.find({
@@ -97,6 +99,17 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
     let grossSalary = 0;
 
     records.forEach((record) => {
+      if (needsOvertimeReview(record)) {
+        overtimeRecords.push({
+          _id: record._id,
+          employeeName: fullName(employee),
+          date: record.date,
+          timeIn: record.timeIn,
+          timeOut: record.timeOut,
+          overtimeMinutes: record.overtimeMinutes,
+        });
+      }
+
       if (isIncomplete(record)) {
         totalIncomplete++;
         incompleteRecords.push({
@@ -137,7 +150,7 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
     });
   }
 
-  return { rows, skipped, incompleteRecords, pendingRecords };
+  return { rows, skipped, incompleteRecords, pendingRecords, overtimeRecords };
 };
 
 // PREVIEW PAYROLL (nothing is saved or archived)
@@ -151,7 +164,7 @@ exports.previewPayroll = async (req, res) => {
       return res.status(400).json({ message: validationError });
     }
 
-    const { rows, skipped, incompleteRecords, pendingRecords } = await buildPayroll({
+    const { rows, skipped, incompleteRecords, pendingRecords, overtimeRecords } = await buildPayroll({
       startDate,
       endDate,
       employeeIds,
@@ -164,6 +177,7 @@ exports.previewPayroll = async (req, res) => {
       skipped,
       incompleteRecords,
       pendingRecords,
+      overtimeRecords,
     });
   } catch (error) {
     res.status(500).json({

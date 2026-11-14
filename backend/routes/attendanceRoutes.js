@@ -9,6 +9,8 @@ const {
   getPendingRequests,
   approvePending,
   rejectPending,
+  getOvertimeToReview,
+  reviewOvertime,
   getMyToday,
   getMyAttendance,
   getMyArchivedAttendance,
@@ -40,6 +42,8 @@ router.get("/my-archives", protect, employeeOnly, getMyArchivedAttendance);
 
 // ADMIN
 router.get("/pending-requests", protect, adminOnly, getPendingRequests);
+router.get("/overtime", protect, adminOnly, getOvertimeToReview);
+router.put("/:id/overtime", protect, adminOnly, reviewOvertime);
 router.put("/:id/approve-request", protect, adminOnly, approvePending);
 router.put("/:id/reject-request", protect, adminOnly, rejectPending);
 router.get("/", protect, adminOnly, getAllAttendance);

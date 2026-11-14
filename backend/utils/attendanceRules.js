@@ -3,7 +3,9 @@
 // - Late:    time-in is after the required time-in but less than 90 minutes late
 // - Absent:  time-in is 90 minutes late or more (0 hours, ₱0 gross pay)
 //
-// Paid hours are counted from the ACTUAL time-in to the time-out.
+// Paid hours are counted from the ACTUAL time-in to the time-out, but stop
+// at the scheduled end (required time-in + shift hours). Time after that is
+// overtime: recorded, and paid only when the admin approves it.
 // Lateness already reduces the paid hours, so no separate late deduction is
 // charged (lateDeduction is always 0). Late minutes are still recorded.
 
@@ -48,14 +50,27 @@ const validateShiftTimes = (timeIn, timeOut) => {
   return null;
 };
 
-// Remarks and late minutes based on time-in only
-// (used at time-in, before the employee has timed out).
-const calculateTimeIn = ({ requiredTimeIn, timeIn }) => {
-  // Difference on a 24-hour clock, kept within ±12 hours, so a 00:10
-  // time-in for a 23:30 schedule is 40 minutes late (not 23 hours early)
+// Signed minutes from the required time-in to the actual time-in, on a
+// 24-hour clock kept within ±12 hours (negative = early). A 00:10 time-in
+// for a 23:30 schedule is +40 (not 23 hours early).
+const timeInOffset = (requiredTimeIn, timeIn) => {
   let difference = timeToMinutes(timeIn) - timeToMinutes(requiredTimeIn);
   if (difference > 12 * 60) difference -= 24 * 60;
   if (difference <= -12 * 60) difference += 24 * 60;
+  return difference;
+};
+
+// Scheduled end as HH:mm (e.g. 18:00 + 12h -> 06:00)
+const scheduledEndTime = (requiredTimeIn, scheduledHours) => {
+  if (!requiredTimeIn || !scheduledHours) return null;
+  const total = (timeToMinutes(requiredTimeIn) + Math.round(scheduledHours * 60)) % (24 * 60);
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
+};
+
+// Remarks and late minutes based on time-in only
+// (used at time-in, before the employee has timed out).
+const calculateTimeIn = ({ requiredTimeIn, timeIn }) => {
+  const difference = timeInOffset(requiredTimeIn, timeIn);
 
   const lateMinutes = Math.max(difference, 0);
 
@@ -75,6 +90,8 @@ const calculateAttendance = ({
   timeIn,
   timeOut,
   hourlyRate,
+  scheduledHours = null,
+  overtimeApproved = false,
 }) => {
   const { lateMinutes, remarks } = calculateTimeIn({ requiredTimeIn, timeIn });
 
@@ -85,13 +102,28 @@ const calculateAttendance = ({
       lateHours: 0,
       grossPay: 0,
       lateDeduction: 0,
+      overtimeMinutes: 0,
       remarks,
     };
   }
 
   // Counts across midnight (18:00 -> 06:00 = 12 hours)
   const workedMinutes = shiftMinutes(timeIn, timeOut);
-  const totalHours = Number((workedMinutes / 60).toFixed(2));
+
+  // Minutes from the actual time-in to the scheduled end
+  let overtimeMinutes = 0;
+  let paidMinutes = workedMinutes;
+
+  if (scheduledHours) {
+    const untilScheduledEnd = Math.max(
+      0,
+      Math.round(scheduledHours * 60) - timeInOffset(requiredTimeIn, timeIn)
+    );
+    overtimeMinutes = Math.max(0, workedMinutes - untilScheduledEnd);
+    if (!overtimeApproved) paidMinutes = workedMinutes - overtimeMinutes;
+  }
+
+  const totalHours = Number((paidMinutes / 60).toFixed(2));
   const lateHours = Number((lateMinutes / 60).toFixed(2));
   const grossPay = roundMoney(totalHours * hourlyRate);
 
@@ -101,6 +133,7 @@ const calculateAttendance = ({
     lateHours,
     grossPay,
     lateDeduction: 0,
+    overtimeMinutes,
     remarks,
   };
 };
@@ -110,6 +143,7 @@ const calculateAttendance = ({
 // (except Absent, which is 0 hours regardless).
 const applyAttendanceRules = (attendance) => {
   if (!attendance.timeIn) {
+    attendance.overtimeMinutes = 0;
     attendance.totalHours = 0;
     attendance.grossPay = 0;
     attendance.lateMinutes = 0;
@@ -126,8 +160,11 @@ const applyAttendanceRules = (attendance) => {
       timeIn: attendance.timeIn,
       timeOut: attendance.timeOut,
       hourlyRate: attendance.hourlyRate,
+      scheduledHours: attendance.scheduledHours,
+      overtimeApproved: attendance.overtimeApproved,
     });
 
+    attendance.overtimeMinutes = result.overtimeMinutes;
     attendance.totalHours = result.totalHours;
     attendance.grossPay = result.grossPay;
     attendance.lateMinutes = result.lateMinutes;
@@ -141,6 +178,7 @@ const applyAttendanceRules = (attendance) => {
     timeIn: attendance.timeIn,
   });
 
+  attendance.overtimeMinutes = 0;
   attendance.totalHours = 0;
   attendance.grossPay = 0;
   attendance.lateMinutes = lateMinutes;
@@ -151,6 +189,16 @@ const applyAttendanceRules = (attendance) => {
 
 // A record is incomplete when the employee timed in but never timed out.
 // Absent records are already final (0 hours) and do not need a time-out.
+// Overtime worth the admin's attention (30+ minutes, not reviewed yet)
+const OVERTIME_REVIEW_MINUTES = 30;
+const needsOvertimeReview = (attendance) =>
+  Boolean(
+    attendance.scheduledHours &&
+      attendance.timeOut &&
+      attendance.overtimeMinutes >= OVERTIME_REVIEW_MINUTES &&
+      !attendance.overtimeReviewed
+  );
+
 const isIncomplete = (attendance) => {
   return Boolean(
     attendance.timeIn && !attendance.timeOut && attendance.remarks !== "Absent"
@@ -165,9 +213,13 @@ module.exports = {
   shiftMinutes,
   validateShiftTimes,
   timeToMinutes,
+  timeInOffset,
+  scheduledEndTime,
   roundMoney,
   calculateTimeIn,
   calculateAttendance,
   applyAttendanceRules,
   isIncomplete,
+  OVERTIME_REVIEW_MINUTES,
+  needsOvertimeReview,
 };

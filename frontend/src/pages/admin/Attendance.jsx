@@ -330,6 +330,12 @@ const Attendance = () => {
             requested
           </span>
         )}
+        {record.overtimeMinutes > 0 && (
+          <div className="lp-muted" title="Time after the scheduled shift end">
+            +{Math.floor(record.overtimeMinutes / 60)}h {String(record.overtimeMinutes % 60).padStart(2, "0")}m OT
+            {record.overtimeApproved ? " · paid" : " · not paid"}
+          </div>
+        )}
       </td>
       <td>{record.totalHours || 0}</td>
       <td>

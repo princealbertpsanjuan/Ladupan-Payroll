@@ -149,3 +149,11 @@
   font-style: normal;
   font-weight: 600;
 }
+
+.shift-end-note {
+  display: block;
+  margin-top: 6px;
+  color: var(--color-text-muted, #6b7280);
+  font-size: 13px;
+  font-style: normal;
+}

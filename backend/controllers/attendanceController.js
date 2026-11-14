@@ -18,6 +18,11 @@ const {
 } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
 const { notifyUser, notifyAdmins } = require("../utils/notify");
+const {
+  scheduledEndTime,
+  needsOvertimeReview,
+  OVERTIME_REVIEW_MINUTES,
+} = require("../utils/attendanceRules");
 const { getNetworkCheck } = require("../middleware/networkGuard");
 
 const snapshot = (record) => ({
@@ -128,6 +133,7 @@ const recordTimeIn = async (req, res, { pending = false, ip = "" } = {}) => {
       requiredTimeIn: employee.requiredTimeIn,
       timeIn: currentTime,
       hourlyRate: employee.hourlyRate,
+      scheduledHours: employee.shiftHours || 12,
       timeInPending: pending,
       requestInfo: { timeInIp: pending ? ip : "" },
     });
@@ -239,12 +245,30 @@ const recordTimeOut = async (req, res, { pending = false, ip = "" } = {}) => {
       });
     }
 
-    let message = "Time out successful";
+    // Worked well past the scheduled end (or came back late to time out):
+    // only the scheduled hours are paid until the admin reviews the overtime
+    const overtimeNote =
+      attendance.overtimeMinutes > 0
+        ? ` Your schedule ended at ${scheduledEndTime(attendance.requiredTimeIn, attendance.scheduledHours)}; the extra ${formatMinutes(attendance.overtimeMinutes)} is paid only if the admin approves it as overtime.`
+        : "";
+
+    if (needsOvertimeReview(attendance)) {
+      await notifyAdmins({
+        type: "overtime_review",
+        level: "warning",
+        title: `${fullName(employee)} timed out ${formatMinutes(attendance.overtimeMinutes)} after their shift`,
+        message: `${attendance.date}: scheduled end ${scheduledEndTime(attendance.requiredTimeIn, attendance.scheduledHours)}, timed out ${currentTime}. Approve the overtime in DTR Corrections if it was real.`,
+        link: "/admin/corrections",
+      });
+    }
+
+    let message = "Time out successful.";
     if (pending) {
       message = `Time out request sent (${currentTime}). It counts once the admin approves it.`;
     } else if (attendance.timeOutNextDay) {
-      message = `Time out successful. Your shift from ${attendance.date} ${attendance.timeIn} is complete (${attendance.totalHours} hrs).`;
+      message = `Time out successful. Your shift from ${attendance.date} ${attendance.timeIn} is complete (${attendance.totalHours} hrs paid).`;
     }
+    message += overtimeNote;
 
     res.json({ message, attendance });
   } catch (error) {
@@ -291,6 +315,99 @@ exports.requestTimeOut = async (req, res) => {
     return recordTimeOut(req, res, { pending: true, ip: network.ip });
   } catch (error) {
     res.status(500).json({ message: "Request failed", error: error.message });
+  }
+};
+
+// "3h 05m"
+const formatMinutes = (minutes) => {
+  const h = Math.floor(minutes / 60);
+  const m = minutes % 60;
+  return h ? `${h}h${m ? ` ${String(m).padStart(2, "0")}m` : ""}` : `${m}m`;
+};
+
+// ADMIN: completed shifts with 30+ minutes past the scheduled end that
+// haven't been reviewed yet
+exports.getOvertimeToReview = async (req, res) => {
+  try {
+    const records = await Attendance.find({
+      isArchived: false,
+      overtimeReviewed: false,
+      scheduledHours: { $ne: null },
+      timeOut: { $ne: null },
+      overtimeMinutes: { $gte: OVERTIME_REVIEW_MINUTES },
+    })
+      .populate("employee", "firstName lastName employeeId")
+      .sort({ date: -1 });
+
+    res.json(
+      records.map((record) => ({
+        ...record.toObject(),
+        scheduledEnd: scheduledEndTime(record.requiredTimeIn, record.scheduledHours),
+      }))
+    );
+  } catch (error) {
+    res.status(500).json({ message: "Failed to load overtime", error: error.message });
+  }
+};
+
+// ADMIN: approve (paid) or decline (not paid) the overtime on a record.
+// Can be changed later as long as the record isn't in a payroll yet.
+exports.reviewOvertime = async (req, res) => {
+  try {
+    const { approved } = req.body;
+
+    if (typeof approved !== "boolean") {
+      return res.status(400).json({ message: "approved must be true or false" });
+    }
+
+    const attendance = await Attendance.findById(req.params.id).populate(
+      "employee",
+      "firstName lastName"
+    );
+
+    if (!attendance) return res.status(404).json({ message: "Record not found" });
+
+    if (attendance.isArchived) {
+      return res.status(400).json({ message: "This record is already included in a payroll" });
+    }
+
+    if (!attendance.overtimeMinutes) {
+      return res.status(400).json({ message: "This record has no overtime" });
+    }
+
+    const beforeHours = attendance.totalHours;
+    attendance.overtimeApproved = approved;
+    attendance.overtimeReviewed = true;
+    applyAttendanceRules(attendance);
+    await attendance.save();
+
+    const ot = formatMinutes(attendance.overtimeMinutes);
+
+    await logAudit(req, {
+      action: approved ? "OVERTIME_APPROVED" : "OVERTIME_DECLINED",
+      entityType: "Attendance",
+      entityId: attendance._id,
+      description: `${approved ? "Approved" : "Declined"} ${ot} overtime for ${fullName(attendance.employee)} on ${attendance.date} (paid hours ${beforeHours} → ${attendance.totalHours})`,
+    });
+
+    await notifyUser(attendance.employee?._id, {
+      type: "overtime_reviewed",
+      level: approved ? "success" : "info",
+      title: approved ? "Overtime approved" : "Overtime not approved",
+      message: approved
+        ? `${attendance.date}: your extra ${ot} is paid (${attendance.totalHours} hrs).`
+        : `${attendance.date}: paid up to your scheduled end (${attendance.totalHours} hrs).`,
+      link: "/client/records",
+    });
+
+    res.json({
+      message: approved
+        ? `Overtime approved: ${attendance.totalHours} hrs paid`
+        : `Overtime declined: ${attendance.totalHours} hrs paid`,
+      attendance,
+    });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to review overtime", error: error.message });
   }
 };
 
@@ -554,6 +671,7 @@ exports.createAttendance = async (req, res) => {
       timeIn,
       timeOut: timeOut || null,
       hourlyRate: employee.hourlyRate,
+      scheduledHours: employee.shiftHours || 12,
     });
 
     applyAttendanceRules(attendance);

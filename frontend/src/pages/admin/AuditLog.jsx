@@ -34,6 +34,8 @@ const ACTION_LABELS = {
   TIME_IN_REQUESTED: "Time in requested (off Wi-Fi)",
   TIME_OUT_REQUESTED: "Time out requested (off Wi-Fi)",
   TIME_REQUEST_APPROVED: "Time request approved",
+  OVERTIME_APPROVED: "Overtime approved",
+  OVERTIME_DECLINED: "Overtime not paid",
   TIME_REQUEST_REJECTED: "Time request rejected",
   ATTENDANCE_BLOCKED_DEVICE: "Blocked: unregistered phone",
   DEVICE_REGISTERED: "Phone registered",

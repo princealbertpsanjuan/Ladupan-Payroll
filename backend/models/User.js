@@ -45,6 +45,15 @@ const userSchema = new mongoose.Schema(
       default: "08:00",
     },
 
+    // Scheduled shift length. Pay stops at required time-in + shift hours
+    // unless the admin approves overtime.
+    shiftHours: {
+      type: Number,
+      default: 12,
+      min: 1,
+      max: 16,
+    },
+
     isActive: {
       type: Boolean,
       default: true,

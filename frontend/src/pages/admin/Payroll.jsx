@@ -393,6 +393,25 @@ const Payroll = () => {
             </div>
           )}
 
+          {preview.overtimeRecords?.length > 0 && (
+            <div className="lp-alert info">
+              <strong>{preview.overtimeRecords.length} shift(s) have overtime you haven't reviewed.</strong>{" "}
+              They're paid only up to the scheduled end for now:
+              <ul>
+                {preview.overtimeRecords.map((record) => (
+                  <li key={record._id}>
+                    {record.employeeName}: {record.date} ({record.timeIn} – {record.timeOut}), +
+                    {Math.floor(record.overtimeMinutes / 60)}h {String(record.overtimeMinutes % 60).padStart(2, "0")}m
+                  </li>
+                ))}
+              </ul>
+              <p style={{ marginTop: 8 }}>
+                To pay any of it, approve it in <Link to="/admin/corrections">DTR Corrections</Link>{" "}
+                first, then preview again.
+              </p>
+            </div>
+          )}
+
           {preview.skipped.length > 0 && (
             <div className="lp-alert info">
               Not included:{" "}

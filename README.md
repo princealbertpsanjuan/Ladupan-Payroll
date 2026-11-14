@@ -181,6 +181,20 @@ notification (at most one per employee every 15 minutes).
   like the proxy's address. Do not set it when there is no proxy, or someone
   could fake the shop's address.
 
+### Shift hours and overtime
+
+Each employee has a **Shift Hours** setting (e.g. 12 or 10) next to their
+required time in. Pay counts from the actual time in and **stops at the
+scheduled end** (required time in + shift hours).
+
+- Time after the scheduled end is recorded as overtime but **not paid** until
+  the admin approves it. This also covers someone who forgot to time out and
+  came back later.
+- Overtime of 30 minutes or more notifies the admins and appears in
+  **DTR Corrections → Overtime to review** (Pay Overtime / Don't Pay).
+- Payroll Preview lists unreviewed overtime.
+- Records created before this rule have no cap.
+
 ### Shop Wi-Fi down: Request Time In / Time Out
 
 When the restriction blocks an employee's connection, the buttons change to
