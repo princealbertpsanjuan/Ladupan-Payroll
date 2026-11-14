@@ -10,6 +10,14 @@ import { installFormFeedback } from "./utils/formFeedback.js";
 // Gentle shake + highlight on fields that fail validation
 installFormFeedback();
 
+// Lets phones install Ladupan as an app (Add to Home screen).
+// The service worker never caches pages or data.
+if ("serviceWorker" in navigator && import.meta.env.PROD) {
+  window.addEventListener("load", () => {
+    navigator.serviceWorker.register("/sw.js").catch(() => {});
+  });
+}
+
 createRoot(document.getElementById("root")).render(
   <StrictMode>
     <ToastProvider>
