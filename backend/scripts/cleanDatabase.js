@@ -1,6 +1,6 @@
 // Clean the database before going live.
 //
-// KEEPS:   admin accounts, Shop Network settings
+// KEEPS:   admin accounts, Shop Network settings (+ employees with --keep-employees)
 // DELETES: employee accounts, DTR / attendance (active + archived),
 //          payroll reports (and therefore payslips), cash advances,
 //          DTR correction requests, notifications, audit log
@@ -11,6 +11,11 @@
 //   npm run clean-db              -> preview only, nothing is deleted
 //   npm run clean-db -- --confirm -> back up everything, then delete
 //   (or: node scripts/cleanDatabase.js --confirm)
+//
+// Add --keep-employees to also KEEP employee accounts (their rates,
+// schedules and registered phones). Only their records are deleted:
+//   node scripts/cleanDatabase.js --keep-employees            (preview)
+//   node scripts/cleanDatabase.js --keep-employees --confirm  (clean)
 //
 // A JSON backup of every collection is written to backend/backups/
 // before anything is deleted (skip with --no-backup, not recommended).
@@ -34,6 +39,8 @@ const args = process.argv.slice(2);
 // PowerShell can drop the "--" in `npm run clean-db -- --confirm`, so npm
 // receives --confirm itself and passes it on as npm_config_confirm.
 const CONFIRM = args.includes("--confirm") || process.env.npm_config_confirm === "true";
+const KEEP_EMPLOYEES =
+  args.includes("--keep-employees") || process.env.npm_config_keep_employees === "true";
 const SKIP_BACKUP =
   args.includes("--no-backup") || process.env.npm_config_no_backup === "true";
 
@@ -85,6 +92,14 @@ const main = async () => {
   admins.forEach((admin) =>
     console.log(`    - ${admin.firstName} ${admin.lastName} <${admin.email}> ${admin.employeeId || ""}`)
   );
+  if (KEEP_EMPLOYEES) {
+    const kept = await User.find({ role: { $ne: "admin" } })
+      .select("employeeId firstName lastName")
+      .sort({ employeeId: 1 })
+      .lean();
+    console.log(`  Employee accounts: ${kept.length}`);
+    kept.forEach((emp) => console.log(`    - ${emp.employeeId} ${emp.firstName} ${emp.lastName}`));
+  }
   console.log(
     `  Shop Network settings: restriction ${settings?.restrictAttendanceNetwork ? "ON" : "OFF"}, ` +
       `${settings?.allowedNetworks?.length || 0} allowed network(s)`
@@ -95,11 +110,11 @@ const main = async () => {
 
   console.log("");
   console.log("DELETE");
-  console.log(`  Employee accounts: ${employeeCount}`);
+  if (!KEEP_EMPLOYEES) console.log(`  Employee accounts: ${employeeCount}`);
   for (const item of DELETE_ALL) {
     console.log(`  ${item.label}: ${await item.model.countDocuments()}`);
   }
-  console.log("  Employee ID counter: reset");
+  if (!KEEP_EMPLOYEES) console.log("  Employee ID counter: reset");
   console.log("");
 
   if (admins.length === 0) {
@@ -110,7 +125,9 @@ const main = async () => {
 
   if (!CONFIRM) {
     console.log("Preview only. Nothing was deleted.");
-    console.log("To clean the database, run:  node scripts/cleanDatabase.js --confirm");
+    console.log(
+      `To clean the database, run:  node scripts/cleanDatabase.js${KEEP_EMPLOYEES ? " --keep-employees" : ""} --confirm`
+    );
     await mongoose.disconnect();
     return;
   }
@@ -122,8 +139,10 @@ const main = async () => {
 
   const results = [];
 
-  const employees = await User.deleteMany({ role: { $ne: "admin" } });
-  results.push(`Employee accounts deleted: ${employees.deletedCount}`);
+  if (!KEEP_EMPLOYEES) {
+    const employees = await User.deleteMany({ role: { $ne: "admin" } });
+    results.push(`Employee accounts deleted: ${employees.deletedCount}`);
+  }
 
   for (const item of DELETE_ALL) {
     const result = await item.model.deleteMany({});
@@ -131,13 +150,19 @@ const main = async () => {
   }
 
   // The next Employee ID is recalculated from the accounts that remain
-  await Counter.deleteOne({ _id: "employeeId" });
-  results.push("Employee ID counter reset");
+  if (!KEEP_EMPLOYEES) {
+    await Counter.deleteOne({ _id: "employeeId" });
+    results.push("Employee ID counter reset");
+  }
 
   console.log("");
   results.forEach((line) => console.log(`  ✓ ${line}`));
   console.log("");
-  console.log("Done. Admin accounts and Shop Network settings were kept.");
+  console.log(
+    KEEP_EMPLOYEES
+      ? "Done. Admin accounts, employee accounts and Shop Network settings were kept."
+      : "Done. Admin accounts and Shop Network settings were kept."
+  );
 
   await mongoose.disconnect();
 };

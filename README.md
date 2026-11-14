@@ -70,6 +70,10 @@ and Employee IDs restart after the highest one still in use.
 cd backend
 npm run clean-db               # preview: shows what would be deleted
 npm run clean-db -- --confirm  # backs up to backend/backups/, then deletes
+
+# Keep employee accounts too (delete only DTRs, payroll, advances, logs):
+node scripts/cleanDatabase.js --keep-employees            # preview
+node scripts/cleanDatabase.js --keep-employees --confirm  # clean
 ```
 
 The backup folder holds passwords (hashed) and salary data. It is ignored by
