@@ -17,6 +17,10 @@
 //   node scripts/cleanDatabase.js --keep-employees            (preview)
 //   node scripts/cleanDatabase.js --keep-employees --confirm  (clean)
 //
+// Add --remove-admin <email> to delete one extra admin account
+// (refused if it is the only admin):
+//   node scripts/cleanDatabase.js --keep-employees --remove-admin old@example.com --confirm
+//
 // A JSON backup of every collection is written to backend/backups/
 // before anything is deleted (skip with --no-backup, not recommended).
 
@@ -41,6 +45,13 @@ const args = process.argv.slice(2);
 const CONFIRM = args.includes("--confirm") || process.env.npm_config_confirm === "true";
 const KEEP_EMPLOYEES =
   args.includes("--keep-employees") || process.env.npm_config_keep_employees === "true";
+// --remove-admin <email>  or  --remove-admin=<email>
+const removeAdminArg = (() => {
+  const i = args.findIndex((a) => a === "--remove-admin" || a.startsWith("--remove-admin="));
+  if (i === -1) return "";
+  const value = args[i].includes("=") ? args[i].split("=").slice(1).join("=") : args[i + 1];
+  return String(value || "").trim().toLowerCase();
+})();
 const SKIP_BACKUP =
   args.includes("--no-backup") || process.env.npm_config_no_backup === "true";
 
@@ -80,7 +91,26 @@ const main = async () => {
   await mongoose.connect(process.env.MONGO_URI);
   const dbName = mongoose.connection.name;
 
-  const admins = await User.find({ role: "admin" }).select("employeeId firstName lastName email").lean();
+  const allAdmins = await User.find({ role: "admin" }).select("employeeId firstName lastName email").lean();
+
+  let adminToRemove = null;
+  if (removeAdminArg) {
+    adminToRemove = allAdmins.find((a) => String(a.email).toLowerCase() === removeAdminArg) || null;
+
+    if (!adminToRemove) {
+      console.error(`Stopped: no admin account with the email ${removeAdminArg}. Nothing was deleted.`);
+      await mongoose.disconnect();
+      process.exit(1);
+    }
+
+    if (allAdmins.length === 1) {
+      console.error("Stopped: that is the only admin account (you would be locked out). Nothing was deleted.");
+      await mongoose.disconnect();
+      process.exit(1);
+    }
+  }
+
+  const admins = allAdmins.filter((a) => !adminToRemove || String(a._id) !== String(adminToRemove._id));
   const employeeCount = await User.countDocuments({ role: { $ne: "admin" } });
   const settings = await Setting.findById("app").lean();
 
@@ -110,6 +140,11 @@ const main = async () => {
 
   console.log("");
   console.log("DELETE");
+  if (adminToRemove) {
+    console.log(
+      `  Admin account: ${adminToRemove.firstName} ${adminToRemove.lastName} <${adminToRemove.email}> ${adminToRemove.employeeId || ""}`
+    );
+  }
   if (!KEEP_EMPLOYEES) console.log(`  Employee accounts: ${employeeCount}`);
   for (const item of DELETE_ALL) {
     console.log(`  ${item.label}: ${await item.model.countDocuments()}`);
@@ -126,7 +161,7 @@ const main = async () => {
   if (!CONFIRM) {
     console.log("Preview only. Nothing was deleted.");
     console.log(
-      `To clean the database, run:  node scripts/cleanDatabase.js${KEEP_EMPLOYEES ? " --keep-employees" : ""} --confirm`
+      `To clean the database, run:  node scripts/cleanDatabase.js${KEEP_EMPLOYEES ? " --keep-employees" : ""}${adminToRemove ? ` --remove-admin ${adminToRemove.email}` : ""} --confirm`
     );
     await mongoose.disconnect();
     return;
@@ -138,6 +173,11 @@ const main = async () => {
   }
 
   const results = [];
+
+  if (adminToRemove) {
+    await User.deleteOne({ _id: adminToRemove._id, role: "admin" });
+    results.push(`Admin account deleted: ${adminToRemove.email}`);
+  }
 
   if (!KEEP_EMPLOYEES) {
     const employees = await User.deleteMany({ role: { $ne: "admin" } });
