@@ -112,6 +112,9 @@ const TimeInOut = () => {
         type: "error",
         text: err.response?.data?.message || "Time out failed",
       });
+      // The record may have changed (e.g. edited or deleted by the admin):
+      // reload so the screen matches the server
+      if (err.response?.status === 400) fetchTodayAttendance();
     } finally {
       setLoading(false);
       setBusyAction("");
