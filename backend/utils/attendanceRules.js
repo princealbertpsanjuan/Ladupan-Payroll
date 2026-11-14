@@ -24,14 +24,16 @@ const timeToMinutes = (time) => {
 
 const roundMoney = (value) => Number(Number(value || 0).toFixed(2));
 
-// Time-out on or before the time-in = it happened the next day
+// Time-out earlier than the time-in = it happened the next day.
+// The same minute means a time-out right after the time-in (0 minutes),
+// never a 24-hour shift (shifts can't exceed MAX_SHIFT_HOURS anyway).
 const crossesMidnight = (timeIn, timeOut) =>
-  Boolean(timeIn && timeOut) && timeToMinutes(timeOut) <= timeToMinutes(timeIn);
+  Boolean(timeIn && timeOut) && timeToMinutes(timeOut) < timeToMinutes(timeIn);
 
 // Minutes from time-in to time-out, counting across midnight
 const shiftMinutes = (timeIn, timeOut) => {
   let minutes = timeToMinutes(timeOut) - timeToMinutes(timeIn);
-  if (minutes <= 0) minutes += 24 * 60;
+  if (minutes < 0) minutes += 24 * 60;
   return minutes;
 };
 
