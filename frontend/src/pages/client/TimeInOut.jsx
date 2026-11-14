@@ -54,7 +54,11 @@ const TimeInOut = () => {
       setChecking(true);
       const res = await api.get("/attendance/today");
       setAttendance(res.data.attendance);
-      setOpenShift(res.data.openShift || null);
+      // Fall back to today's record if the server didn't send openShift
+      // (e.g. an older backend still running), so Time Out never locks up
+      const today = res.data.attendance;
+      const fallbackOpen = today?.timeIn && !today?.timeOut ? today : null;
+      setOpenShift(res.data.openShift || fallbackOpen);
       setServerDate(res.data.date);
     } catch (error) {
       console.error("Error fetching attendance:", error);
