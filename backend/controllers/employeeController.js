@@ -6,6 +6,7 @@ const { generateEmployeeId } = require("../utils/employeeIdGenerator");
 const { getBalance } = require("../utils/cashAdvanceUtils");
 const { isValidTime } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
+const { notifyUser } = require("../utils/notify");
 
 const normalizeEmail = (email) => String(email || "").trim().toLowerCase();
 
@@ -20,7 +21,7 @@ exports.getEmployees = async (req, res) => {
     const employees = await User.find({
       role: "employee",
     })
-      .select("-password")
+      .select("-password -boundDevice.idHash")
       .sort({ employeeId: 1 });
 
     res.json(employees);
@@ -339,5 +340,44 @@ exports.deleteEmployee = async (req, res) => {
       message: "Failed to delete employee",
       error: error.message,
     });
+  }
+};
+
+// RESET REGISTERED PHONE (device binding)
+// The next phone the employee uses to time in / out becomes registered.
+exports.resetDevice = async (req, res) => {
+  try {
+    const employee = await User.findById(req.params.id);
+
+    if (!employee || employee.role !== "employee") {
+      return res.status(404).json({ message: "Employee not found" });
+    }
+
+    if (!employee.boundDevice?.idHash) {
+      return res.status(400).json({ message: "This employee has no registered phone yet" });
+    }
+
+    const oldLabel = employee.boundDevice.label;
+    employee.boundDevice = { idHash: null, label: "", boundAt: null };
+    await employee.save();
+
+    await logAudit(req, {
+      action: "DEVICE_RESET",
+      entityType: "Employee",
+      entityId: employee._id,
+      description: `Reset the registered phone of ${fullName(employee)}${oldLabel ? ` (was ${oldLabel})` : ""}`,
+    });
+
+    await notifyUser(employee._id, {
+      type: "device_reset",
+      level: "info",
+      title: "Your registered phone was reset",
+      message: "The next phone you use to Time In or Time Out becomes your registered phone.",
+      link: "/client/time",
+    });
+
+    res.json({ message: `${fullName(employee)} can now register a new phone` });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to reset device", error: error.message });
   }
 };

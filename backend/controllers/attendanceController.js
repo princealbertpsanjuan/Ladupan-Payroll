@@ -17,7 +17,8 @@ const {
   isValidTime,
 } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
-const { notifyUser } = require("../utils/notify");
+const { notifyUser, notifyAdmins } = require("../utils/notify");
+const { getNetworkCheck } = require("../middleware/networkGuard");
 
 const snapshot = (record) => ({
   date: record.date,
@@ -99,7 +100,9 @@ const findOpenShift = async (employeeId) => {
 };
 
 // EMPLOYEE TIME IN (once per day)
-exports.timeIn = async (req, res) => {
+// With { pending: true } it is an off-network request: the server records
+// the time now, but the record waits for admin approval before payroll.
+const recordTimeIn = async (req, res, { pending = false, ip = "" } = {}) => {
   try {
     const employee = req.user;
     const today = getToday();
@@ -125,6 +128,8 @@ exports.timeIn = async (req, res) => {
       requiredTimeIn: employee.requiredTimeIn,
       timeIn: currentTime,
       hourlyRate: employee.hourlyRate,
+      timeInPending: pending,
+      requestInfo: { timeInIp: pending ? ip : "" },
     });
 
     // Remarks (Present / Late / Absent) are known as soon as the employee times in
@@ -132,13 +137,32 @@ exports.timeIn = async (req, res) => {
 
     await attendance.save();
 
-    res.status(201).json({
-      message:
-        attendance.remarks === "Absent"
-          ? "Time in recorded. You are 90 minutes late or more, so today is marked Absent."
-          : "Time in successful",
-      attendance,
-    });
+    if (pending) {
+      await notifyAdmins({
+        type: "time_request",
+        level: "warning",
+        title: `${fullName(employee)} requested Time In at ${currentTime}`,
+        message: `Off the shop Wi-Fi (IP ${ip || "unknown"}). Approve or reject it in DTR Corrections.`,
+        link: "/admin/corrections",
+      });
+
+      await logAudit(req, {
+        action: "TIME_IN_REQUESTED",
+        entityType: "Attendance",
+        entityId: attendance._id,
+        description: `${fullName(employee)} requested Time In at ${currentTime} on ${today} outside the shop network (IP ${ip || "unknown"})`,
+        details: { ip },
+      });
+    }
+
+    let message = "Time in successful";
+    if (pending) {
+      message = `Time in request sent (${currentTime}). It counts once the admin approves it.`;
+    } else if (attendance.remarks === "Absent") {
+      message = "Time in recorded. You are 90 minutes late or more, so today is marked Absent.";
+    }
+
+    res.status(201).json({ message, attendance });
   } catch (error) {
     if (error.code === 11000) {
       return res.status(400).json({
@@ -153,8 +177,8 @@ exports.timeIn = async (req, res) => {
   }
 };
 
-// EMPLOYEE TIME OUT (once per day, only after timing in)
-exports.timeOut = async (req, res) => {
+// EMPLOYEE TIME OUT (closes the open shift)
+const recordTimeOut = async (req, res, { pending = false, ip = "" } = {}) => {
   try {
     const employee = req.user;
     const currentTime = getCurrentTime();
@@ -189,21 +213,203 @@ exports.timeOut = async (req, res) => {
     }
 
     attendance.timeOut = currentTime;
+    attendance.timeOutPending = pending;
+    if (pending) {
+      attendance.set("requestInfo.timeOutIp", ip);
+    }
     applyAttendanceRules(attendance);
 
     await attendance.save();
 
-    res.json({
-      message: attendance.timeOutNextDay
-        ? `Time out successful. Your shift from ${attendance.date} ${attendance.timeIn} is complete (${attendance.totalHours} hrs).`
-        : "Time out successful",
-      attendance,
-    });
+    if (pending) {
+      await notifyAdmins({
+        type: "time_request",
+        level: "warning",
+        title: `${fullName(employee)} requested Time Out at ${currentTime}`,
+        message: `Off the shop Wi-Fi (IP ${ip || "unknown"}). Approve or reject it in DTR Corrections.`,
+        link: "/admin/corrections",
+      });
+
+      await logAudit(req, {
+        action: "TIME_OUT_REQUESTED",
+        entityType: "Attendance",
+        entityId: attendance._id,
+        description: `${fullName(employee)} requested Time Out at ${currentTime} (shift ${attendance.date} ${attendance.timeIn}) outside the shop network (IP ${ip || "unknown"})`,
+        details: { ip },
+      });
+    }
+
+    let message = "Time out successful";
+    if (pending) {
+      message = `Time out request sent (${currentTime}). It counts once the admin approves it.`;
+    } else if (attendance.timeOutNextDay) {
+      message = `Time out successful. Your shift from ${attendance.date} ${attendance.timeIn} is complete (${attendance.totalHours} hrs).`;
+    }
+
+    res.json({ message, attendance });
   } catch (error) {
     res.status(500).json({
       message: "Time out failed",
       error: error.message,
     });
+  }
+};
+
+exports.timeIn = (req, res) => recordTimeIn(req, res);
+exports.timeOut = (req, res) => recordTimeOut(req, res);
+
+// EMPLOYEE: request Time In / Time Out while the shop Wi-Fi is down.
+// Only used when the shop-network restriction blocks this connection;
+// on the shop Wi-Fi the normal buttons work.
+const requestGuard = async (req, res) => {
+  const network = await getNetworkCheck(req);
+
+  if (network.allowed) {
+    res.status(400).json({
+      message: "You're on the shop network, so use the normal Time In / Time Out button.",
+    });
+    return null;
+  }
+
+  return network;
+};
+
+exports.requestTimeIn = async (req, res) => {
+  try {
+    const network = await requestGuard(req, res);
+    if (!network) return;
+    return recordTimeIn(req, res, { pending: true, ip: network.ip });
+  } catch (error) {
+    res.status(500).json({ message: "Request failed", error: error.message });
+  }
+};
+
+exports.requestTimeOut = async (req, res) => {
+  try {
+    const network = await requestGuard(req, res);
+    if (!network) return;
+    return recordTimeOut(req, res, { pending: true, ip: network.ip });
+  } catch (error) {
+    res.status(500).json({ message: "Request failed", error: error.message });
+  }
+};
+
+// ADMIN: records with a Time In / Time Out request waiting for approval
+exports.getPendingRequests = async (req, res) => {
+  try {
+    const records = await Attendance.find({
+      $or: [{ timeInPending: true }, { timeOutPending: true }],
+    })
+      .populate("employee", "firstName lastName employeeId")
+      .sort({ date: -1, timeIn: -1 });
+
+    res.json(records);
+  } catch (error) {
+    res.status(500).json({ message: "Failed to load requests", error: error.message });
+  }
+};
+
+const pendingParts = (record) =>
+  [record.timeInPending && `Time In ${record.timeIn}`, record.timeOutPending && `Time Out ${record.timeOut}`]
+    .filter(Boolean)
+    .join(" and ");
+
+// ADMIN: approve the waiting request(s) on a record
+exports.approvePending = async (req, res) => {
+  try {
+    const attendance = await Attendance.findById(req.params.id).populate(
+      "employee",
+      "firstName lastName"
+    );
+
+    if (!attendance) return res.status(404).json({ message: "Record not found" });
+
+    if (!attendance.timeInPending && !attendance.timeOutPending) {
+      return res.status(400).json({ message: "Nothing is waiting for approval on this record" });
+    }
+
+    const parts = pendingParts(attendance);
+    attendance.timeInPending = false;
+    attendance.timeOutPending = false;
+    await attendance.save();
+
+    await logAudit(req, {
+      action: "TIME_REQUEST_APPROVED",
+      entityType: "Attendance",
+      entityId: attendance._id,
+      description: `Approved ${parts} for ${fullName(attendance.employee)} on ${attendance.date}`,
+    });
+
+    await notifyUser(attendance.employee?._id, {
+      type: "time_request_reviewed",
+      level: "success",
+      title: "Time request approved",
+      message: `${attendance.date}: ${parts} now counts.`,
+      link: "/client/records",
+    });
+
+    res.json({ message: `Approved ${parts}`, attendance });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to approve", error: error.message });
+  }
+};
+
+// ADMIN: reject the waiting request(s).
+// A rejected Time In removes the record; a rejected Time Out clears the
+// time-out so the shift is open again (the admin can set the right time).
+exports.rejectPending = async (req, res) => {
+  try {
+    const attendance = await Attendance.findById(req.params.id).populate(
+      "employee",
+      "firstName lastName"
+    );
+
+    if (!attendance) return res.status(404).json({ message: "Record not found" });
+
+    if (!attendance.timeInPending && !attendance.timeOutPending) {
+      return res.status(400).json({ message: "Nothing is waiting for approval on this record" });
+    }
+
+    if (attendance.isArchived) {
+      return res.status(400).json({ message: "This record is already included in a payroll" });
+    }
+
+    const parts = pendingParts(attendance);
+    const note = String(req.body?.note || "").trim().slice(0, 300);
+    const before = snapshot(attendance);
+    let outcome;
+
+    if (attendance.timeInPending) {
+      await attendance.deleteOne();
+      outcome = "The record was removed.";
+    } else {
+      attendance.timeOut = null;
+      attendance.timeOutPending = false;
+      attendance.set("requestInfo.timeOutIp", "");
+      applyAttendanceRules(attendance);
+      await attendance.save();
+      outcome = "The time out was cleared.";
+    }
+
+    await logAudit(req, {
+      action: "TIME_REQUEST_REJECTED",
+      entityType: "Attendance",
+      entityId: attendance._id,
+      description: `Rejected ${parts} for ${fullName(attendance.employee)} on ${attendance.date}. ${outcome}${note ? ` Note: ${note}` : ""}`,
+      details: { before },
+    });
+
+    await notifyUser(attendance.employee?._id, {
+      type: "time_request_reviewed",
+      level: "alert",
+      title: "Time request rejected",
+      message: `${attendance.date}: ${parts} was not approved.${note ? ` ${note}` : ""}`,
+      link: "/client/records",
+    });
+
+    res.json({ message: `Rejected ${parts}. ${outcome}` });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to reject", error: error.message });
   }
 };
 

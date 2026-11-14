@@ -6,6 +6,7 @@ const {
   createEmployee,
   updateEmployee,
   deleteEmployee,
+  resetDevice,
 } = require("../controllers/employeeController");
 
 const { protect } = require("../middleware/authMiddleware");
@@ -27,6 +28,7 @@ router.put(
   updateEmployee
 );
 
+router.put("/:id/reset-device", protect, adminOnly, resetDevice);
 router.delete("/:id", protect, adminOnly, deleteEmployee);
 
 module.exports = router;

@@ -121,10 +121,14 @@ const MyRecords = () => {
 
                   <td>{record.requiredTimeIn || "-"}</td>
 
-                  <td>{record.timeIn || "-"}</td>
+                  <td>
+                    {record.timeIn || "-"}
+                    {record.timeInPending && <span className="adjusted-tag">awaiting approval</span>}
+                  </td>
 
                   <td>
                     <TimeOutValue record={record} />
+                    {record.timeOutPending && <span className="adjusted-tag">awaiting approval</span>}
                   </td>
 
                   <td>{record.totalHours || 0}</td>

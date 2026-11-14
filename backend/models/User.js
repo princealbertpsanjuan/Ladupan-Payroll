@@ -49,6 +49,14 @@ const userSchema = new mongoose.Schema(
       type: Boolean,
       default: true,
     },
+
+    // Phone registered for Time In / Time Out (when device binding is on).
+    // Only a hash of the device's random ID is stored.
+    boundDevice: {
+      idHash: { type: String, default: null },
+      label: { type: String, default: "" },
+      boundAt: { type: Date, default: null },
+    },
   },
   { timestamps: true }
 );

@@ -4,6 +4,7 @@ import Spinner from "../../components/Spinner";
 import { useToast } from "../../context/ToastContext";
 import { formatDateTime, getEmployeeName } from "../../utils/format";
 import { SkeletonRows } from "../../components/Skeleton";
+import TimeRequestsCard from "../../components/TimeRequestsCard";
 
 const TABS = [
   { value: "pending", label: "Pending" },
@@ -107,6 +108,8 @@ const Corrections = () => {
           </p>
         </div>
       </div>
+
+      <TimeRequestsCard />
 
       <div className="lp-tabs">
         {TABS.map((tab) => (

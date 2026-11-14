@@ -5,6 +5,7 @@ import { SkeletonRows } from "../../components/Skeleton";
 import Spinner from "../../components/Spinner";
 import SortableTh from "../../components/SortableTh";
 import useSort from "../../hooks/useSort";
+import { formatDate } from "../../utils/format";
 import useFlipList from "../../hooks/useFlipList";
 import "../../styles/employees.css";
 
@@ -162,6 +163,28 @@ const Employees = () => {
     }
   };
 
+  // Device lock: let the employee register a new phone
+  const resetDevice = async (employee) => {
+    if (
+      !window.confirm(
+        `Reset the registered phone of ${employee.firstName} ${employee.lastName}?\n\nTheir next Time In or Time Out registers the phone they use.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setTogglingId(`device-${employee._id}`);
+      const res = await api.put(`/employees/${employee._id}/reset-device`);
+      toast.success(res.data.message);
+      await fetchEmployees();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to reset the phone.");
+    } finally {
+      setTogglingId(null);
+    }
+  };
+
   const openDeleteModal = (employee) => {
     setSelectedEmployee(employee);
     setDeleteError("");
@@ -270,12 +293,13 @@ const Employees = () => {
                 <SortableTh label="Hourly Rate" column="hourlyRate" sort={sort} onSort={toggleSort} />
                 <SortableTh label="Required Time In" column="requiredTimeIn" sort={sort} onSort={toggleSort} />
                 <SortableTh label="Status" column="status" sort={sort} onSort={toggleSort} />
+                <th>Phone</th>
                 <th>Actions</th>
               </tr>
             </thead>
 
             <tbody ref={tbodyRef}>
-              {loading && employees.length === 0 && <SkeletonRows rows={6} cols={7} />}
+              {loading && employees.length === 0 && <SkeletonRows rows={6} cols={8} />}
 
               {sortedRows.map((emp) => (
                 <tr key={emp._id} data-key={emp._id}>
@@ -296,6 +320,16 @@ const Employees = () => {
                     </span>
                   </td>
                   <td>
+                    {emp.boundDevice?.boundAt ? (
+                      <>
+                        <span className="lp-nowrap">{emp.boundDevice.label || "Registered"}</span>
+                        <div className="lp-muted lp-nowrap">since {formatDate(emp.boundDevice.boundAt)}</div>
+                      </>
+                    ) : (
+                      <span className="lp-muted">Not registered</span>
+                    )}
+                  </td>
+                  <td>
                     <div className="action-buttons">
                       <button
                         className="edit-btn"
@@ -314,6 +348,19 @@ const Employees = () => {
                         {emp.isActive ? "Deactivate" : "Activate"}
                       </button>
 
+                      {emp.boundDevice?.boundAt && (
+                        <button
+                          className="lp-btn secondary small"
+                          onClick={() => resetDevice(emp)}
+                          disabled={togglingId === `device-${emp._id}`}
+                          aria-busy={togglingId === `device-${emp._id}`}
+                          title="Let this employee register a new phone"
+                        >
+                          {togglingId === `device-${emp._id}` && <Spinner />}
+                          Reset Phone
+                        </button>
+                      )}
+
                       <button
                         className="delete-btn"
                         onClick={() => openDeleteModal(emp)}
@@ -327,7 +374,7 @@ const Employees = () => {
 
               {!loading && filteredEmployees.length === 0 && (
                 <tr>
-                  <td colSpan="7" className="empty-row">
+                  <td colSpan="8" className="empty-row">
                     No employees found.
                   </td>
                 </tr>

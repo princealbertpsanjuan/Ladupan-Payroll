@@ -6,7 +6,8 @@ import Spinner from "../../components/Spinner";
 import { SkeletonBlock } from "../../components/Skeleton";
 import { formatDateTime } from "../../utils/format";
 
-// Admin settings: allow Time In / Time Out only from the shop's network.
+// Admin settings: allow Time In / Time Out only from the shop's network,
+// and (device lock) only on each employee's registered phone.
 const ShopNetwork = () => {
   const toast = useToast();
 
@@ -91,7 +92,37 @@ const ShopNetwork = () => {
     }
   };
 
+  const toggleDeviceBinding = async () => {
+    const turnOn = !data.deviceBinding;
+
+    if (
+      turnOn &&
+      !window.confirm(
+        "Turn on the device lock?\n\nEach employee's next Time In or Time Out registers that phone as theirs. After that, only that phone can record their time, and one phone can't be used for two employees."
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setBusy("device");
+      const res = await api.put("/settings/device-binding", { enabled: turnOn });
+      applyResponse(res);
+      toast.success(
+        turnOn
+          ? "Each employee's next Time In / Time Out registers their phone."
+          : "Employees can time in and out on any phone.",
+        { title: turnOn ? "Device lock turned on" : "Device lock turned off" }
+      );
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update the setting.");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const enabled = Boolean(data?.restrictAttendanceNetwork);
+  const deviceOn = Boolean(data?.deviceBinding);
   const networks = data?.allowedNetworks || [];
 
   return (
@@ -140,6 +171,35 @@ const ShopNetwork = () => {
               >
                 <span className="lp-switch-knob">{busy === "toggle" && <Spinner />}</span>
                 <span className="sr-only">Restrict Time In / Time Out to the shop network</span>
+              </button>
+            </div>
+
+            <div className={`lp-card network-status-card${deviceOn ? " is-on" : ""}`}>
+              <div className="network-status-main">
+                <span className={`card-icon ${deviceOn ? "dark" : ""}`}>
+                  <Icon name="shield" />
+                </span>
+
+                <div>
+                  <h2>{deviceOn ? "Device lock is ON" : "Device lock is OFF"}</h2>
+                  <p>
+                    {deviceOn
+                      ? `Each employee can Time In / Time Out only on their own registered phone. ${data.deviceStats?.registered ?? 0} of ${data.deviceStats?.employees ?? 0} active employees have registered a phone. Reset a phone in Employees when someone changes phones.`
+                      : "Stops one employee from timing in for another. When on, each employee's next Time In / Time Out registers their phone."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={deviceOn}
+                className={`lp-switch${deviceOn ? " is-on" : ""}`}
+                onClick={toggleDeviceBinding}
+                disabled={busy === "device"}
+              >
+                <span className="lp-switch-knob">{busy === "device" && <Spinner />}</span>
+                <span className="sr-only">One registered phone per employee</span>
               </button>
             </div>
 
@@ -307,6 +367,7 @@ const ShopNetwork = () => {
                       <th>When</th>
                       <th>Employee</th>
                       <th>Attempt</th>
+                      <th>Reason</th>
                       <th>IP address</th>
                     </tr>
                   </thead>
@@ -316,13 +377,20 @@ const ShopNetwork = () => {
                         <tr key={log._id}>
                           <td className="lp-nowrap">{formatDateTime(log.createdAt)}</td>
                           <td>{log.actorName}</td>
-                          <td>{log.details?.action === "time out" ? "Time Out" : "Time In"}</td>
+                          <td>{/out/.test(log.details?.action || "") ? "Time Out" : "Time In"}</td>
+                          <td>
+                            {log.action === "ATTENDANCE_BLOCKED_DEVICE"
+                              ? log.details?.reason === "DEVICE_TAKEN"
+                                ? "Another employee's phone"
+                                : "Not their registered phone"
+                              : "Outside shop Wi-Fi"}
+                          </td>
                           <td>{log.details?.ip || "-"}</td>
                         </tr>
                       ))
                     ) : (
                       <tr>
-                        <td colSpan="4" className="lp-empty">
+                        <td colSpan="5" className="lp-empty">
                           No blocked attempts.
                         </td>
                       </tr>

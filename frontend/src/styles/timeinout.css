@@ -136,3 +136,16 @@
   background: #e2e8f0;
   color: #475569;
 }
+/* Off-network request waiting for the admin */
+.pending-tag {
+  display: block;
+  width: fit-content;
+  margin-top: 6px;
+  padding: 2px 8px;
+  border-radius: 999px;
+  background: #fef3c7;
+  color: #92400e;
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 600;
+}

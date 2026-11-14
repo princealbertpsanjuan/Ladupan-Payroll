@@ -4,6 +4,7 @@ const router = express.Router();
 const {
   getNetworkSettings,
   setRestriction,
+  setDeviceBinding,
   addNetwork,
   removeNetwork,
   getMyNetworkStatus,
@@ -18,6 +19,7 @@ router.get("/network/status", protect, getMyNetworkStatus);
 // ADMIN
 router.get("/network", protect, adminOnly, getNetworkSettings);
 router.put("/network/restriction", protect, adminOnly, setRestriction);
+router.put("/device-binding", protect, adminOnly, setDeviceBinding);
 router.post("/network/allowed", protect, adminOnly, addNetwork);
 router.delete("/network/allowed/:id", protect, adminOnly, removeNetwork);
 

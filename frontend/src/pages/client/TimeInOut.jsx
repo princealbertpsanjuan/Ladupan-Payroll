@@ -67,22 +67,24 @@ const TimeInOut = () => {
     }
   };
 
-  const handleTimeIn = async () => {
+  // request = true when the shop Wi-Fi is unreachable: the time is still
+  // recorded now, but it waits for the admin's approval
+  const handleTimeIn = async (request = false) => {
     try {
       setLoading(true);
       setBusyAction("in");
 
-      const res = await api.post("/attendance/time-in");
+      const res = await api.post(request ? "/attendance/request-time-in" : "/attendance/time-in");
       setLastClosed(null);
       setOpenShift(res.data.attendance);
 
       setMessage({
-        type: res.data.attendance?.remarks === "Absent" ? "warning" : "success",
+        type: request || res.data.attendance?.remarks === "Absent" ? "warning" : "success",
         text: res.data.message,
       });
       setAttendance(res.data.attendance);
     } catch (err) {
-      if (err.response?.data?.code === "OUTSIDE_SHOP_NETWORK") fetchNetworkStatus();
+      if (/OUTSIDE_SHOP_NETWORK|^DEVICE_/.test(err.response?.data?.code || "")) fetchNetworkStatus();
 
       setMessage({
         type: "error",
@@ -94,19 +96,19 @@ const TimeInOut = () => {
     }
   };
 
-  const handleTimeOut = async () => {
+  const handleTimeOut = async (request = false) => {
     try {
       setLoading(true);
       setBusyAction("out");
 
-      const res = await api.put("/attendance/time-out");
+      const res = await api.put(request ? "/attendance/request-time-out" : "/attendance/time-out");
       setOpenShift(null);
       setLastClosed(res.data.attendance);
 
-      setMessage({ type: "success", text: res.data.message });
+      setMessage({ type: request ? "warning" : "success", text: res.data.message });
       if (res.data.attendance?.date === serverDate) setAttendance(res.data.attendance);
     } catch (err) {
-      if (err.response?.data?.code === "OUTSIDE_SHOP_NETWORK") fetchNetworkStatus();
+      if (/OUTSIDE_SHOP_NETWORK|^DEVICE_/.test(err.response?.data?.code || "")) fetchNetworkStatus();
 
       setMessage({
         type: "error",
@@ -122,6 +124,9 @@ const TimeInOut = () => {
   };
 
   const offNetwork = Boolean(network?.restricted && !network?.allowed);
+  const device = network?.device;
+  const deviceBlocked = Boolean(device?.enabled && !device?.ok);
+  const willRegisterDevice = Boolean(device?.enabled && device?.ok && !device?.registered);
   // Record shown in the cards: the open shift, else today's, else the
   // shift just completed
   const shown = openShift || attendance || lastClosed;
@@ -164,17 +169,50 @@ const TimeInOut = () => {
           <div className="lp-alert warning network-banner">
             <Icon name="wifiOff" size={18} />
             <div>
-              <strong>You're not connected to the shop Wi-Fi.</strong> Time In and Time
-              Out only work on the shop network. Connect to the shop Wi-Fi, then{" "}
+              <strong>You're not connected to the shop Wi-Fi.</strong> Connect to the shop
+              Wi-Fi, then{" "}
               <button type="button" className="link-btn" onClick={fetchNetworkStatus}>
                 check again
               </button>
-              . You can still view your records from anywhere.
+              . If the shop Wi-Fi is down, tap <strong>Request Time In / Time Out</strong>:
+              the time is recorded now and counts once the admin approves it.
               {network?.ip && (
                 <div className="lp-muted" style={{ marginTop: 6 }}>
                   Your connection: {network.ip}
                 </div>
               )}
+            </div>
+          </div>
+        )}
+
+        {deviceBlocked && (
+          <div className="lp-alert error network-banner">
+            <Icon name="alert" size={18} />
+            <div>
+              <strong>
+                {device.code === "DEVICE_TAKEN"
+                  ? "This phone belongs to another employee."
+                  : device.code === "DEVICE_MISMATCH"
+                    ? "This isn't your registered phone."
+                    : "Couldn't identify this phone."}
+              </strong>{" "}
+              {device.message}
+              {device.label && device.code === "DEVICE_MISMATCH" && (
+                <div className="lp-muted" style={{ marginTop: 6 }}>
+                  Registered phone: {device.label}
+                </div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {willRegisterDevice && (
+          <div className="lp-alert info network-banner">
+            <Icon name="info" size={18} />
+            <div>
+              Your next Time In or Time Out registers <strong>this phone</strong> as yours.
+              After that, only this phone can record your time. On iPhone, keep using the same
+              app (Safari <em>or</em> the home-screen icon).
             </div>
           </div>
         )}
@@ -188,22 +226,34 @@ const TimeInOut = () => {
         <div className="time-actions">
           <button
             className="time-in-btn"
-            onClick={handleTimeIn}
-            disabled={loading || checking || !canTimeIn || offNetwork}
+            onClick={() => handleTimeIn(offNetwork)}
+            disabled={loading || checking || !canTimeIn || deviceBlocked}
             aria-busy={busyAction === "in"}
           >
             {busyAction === "in" && <Spinner />}
-            {busyAction === "in" ? "Recording..." : hasTimedIn ? "Timed In ✓" : "Time In"}
+            {busyAction === "in"
+              ? "Recording..."
+              : hasTimedIn
+                ? "Timed In ✓"
+                : offNetwork
+                  ? "Request Time In"
+                  : "Time In"}
           </button>
 
           <button
             className="time-out-btn"
-            onClick={handleTimeOut}
-            disabled={loading || checking || !canTimeOut || offNetwork}
+            onClick={() => handleTimeOut(offNetwork)}
+            disabled={loading || checking || !canTimeOut || deviceBlocked}
             aria-busy={busyAction === "out"}
           >
             {busyAction === "out" && <Spinner />}
-            {busyAction === "out" ? "Recording..." : hasTimedOut ? "Timed Out ✓" : "Time Out"}
+            {busyAction === "out"
+              ? "Recording..."
+              : hasTimedOut
+                ? "Timed Out ✓"
+                : offNetwork && canTimeOut
+                  ? "Request Time Out"
+                  : "Time Out"}
           </button>
         </div>
 
@@ -237,6 +287,7 @@ const TimeInOut = () => {
           <div className="attendance-info-card">
             <span>Time In</span>
             <strong>{shown?.timeIn || "Not yet"}</strong>
+            {shown?.timeInPending && <em className="pending-tag">Waiting for approval</em>}
           </div>
 
           <div className="attendance-info-card">
@@ -244,6 +295,7 @@ const TimeInOut = () => {
             <strong>
               <TimeOutValue record={shown} empty="Not yet" />
             </strong>
+            {shown?.timeOutPending && <em className="pending-tag">Waiting for approval</em>}
           </div>
 
           <div className="attendance-info-card">

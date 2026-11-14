@@ -177,6 +177,32 @@ notification (at most one per employee every 15 minutes).
   like the proxy's address. Do not set it when there is no proxy, or someone
   could fake the shop's address.
 
+### Shop Wi-Fi down: Request Time In / Time Out
+
+When the restriction blocks an employee's connection, the buttons change to
+**Request Time In** / **Request Time Out**. The server records the time at the
+moment of the tap (the employee can't choose it), marks it *waiting for
+approval* and notifies the admins.
+
+- Approve or reject in **DTR Corrections → Time requests**.
+- A pending Time In can still be timed out normally once back on the Wi-Fi.
+- Rejecting a Time In removes the record; rejecting a Time Out clears it
+  (the shift is open again, and the admin can set the right time).
+- Pending records are **left out of payroll**. The Payroll Preview lists them
+  so they can be approved first.
+
+### Device lock (one phone per employee)
+
+Turn it on in **Shop Network → Device lock**. Each employee's next Time In or
+Time Out registers that phone. After that:
+
+- only that phone can record their time, and
+- one phone can't be registered to two employees (stops timing in for a coworker).
+
+Blocked attempts notify the admins. When someone changes phones (or clears the
+browser's data), use **Employees → Reset Phone**. On iPhone, Safari and the
+home-screen app count as different "phones", so employees should keep using one.
+
 ### Notifications
 
 The bell in the sidebar shows in-app notifications (checked every 30 seconds

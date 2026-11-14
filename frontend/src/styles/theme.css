@@ -2007,6 +2007,19 @@ tbody tr.group-row {
   align-items: start;
 }
 
+.lp-form.name-form {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr)) auto;
+  gap: var(--space-4);
+  align-items: end;
+}
+
+@media (max-width: 700px) {
+  .lp-form.name-form {
+    grid-template-columns: 1fr;
+  }
+}
+
 .account-forms .lp-card {
   margin-bottom: 0;
 }

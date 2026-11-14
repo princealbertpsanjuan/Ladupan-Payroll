@@ -43,9 +43,12 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
   const rows = [];
   const skipped = [];
   const incompleteRecords = [];
+  // Off-network Time In / Time Out requests not approved yet: left out of
+  // this payroll (they stay active and count once approved)
+  const pendingRecords = [];
 
   for (const employee of employees) {
-    const records = await Attendance.find({
+    const allRecords = await Attendance.find({
       employee: employee._id,
       isArchived: false,
       date: {
@@ -54,11 +57,33 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
       },
     }).sort({ date: 1 });
 
+    const records = [];
+
+    allRecords.forEach((record) => {
+      if (record.timeInPending || record.timeOutPending) {
+        pendingRecords.push({
+          _id: record._id,
+          employee: employee._id,
+          employeeName: fullName(employee),
+          date: record.date,
+          timeIn: record.timeIn,
+          timeOut: record.timeOut,
+          timeInPending: record.timeInPending,
+          timeOutPending: record.timeOutPending,
+        });
+      } else {
+        records.push(record);
+      }
+    });
+
     if (records.length === 0) {
       skipped.push({
         employee: employee._id,
         employeeName: fullName(employee),
-        reason: "No active DTR records in this period",
+        reason:
+          allRecords.length > 0
+            ? "Only DTRs waiting for approval in this period"
+            : "No active DTR records in this period",
       });
       continue;
     }
@@ -112,7 +137,7 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
     });
   }
 
-  return { rows, skipped, incompleteRecords };
+  return { rows, skipped, incompleteRecords, pendingRecords };
 };
 
 // PREVIEW PAYROLL (nothing is saved or archived)
@@ -126,7 +151,7 @@ exports.previewPayroll = async (req, res) => {
       return res.status(400).json({ message: validationError });
     }
 
-    const { rows, skipped, incompleteRecords } = await buildPayroll({
+    const { rows, skipped, incompleteRecords, pendingRecords } = await buildPayroll({
       startDate,
       endDate,
       employeeIds,
@@ -138,6 +163,7 @@ exports.previewPayroll = async (req, res) => {
       employees: rows.map(({ recordIds, ...row }) => row),
       skipped,
       incompleteRecords,
+      pendingRecords,
     });
   } catch (error) {
     res.status(500).json({

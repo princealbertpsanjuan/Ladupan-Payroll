@@ -15,6 +15,7 @@ const ACTION_LABELS = {
   EMPLOYEE_DELETED: "Employee deleted",
   PASSWORD_CHANGED: "Password changed",
   EMAIL_CHANGED: "Email changed",
+  NAME_CHANGED: "Name changed",
   ATTENDANCE_CREATED: "DTR added",
   ATTENDANCE_UPDATED: "DTR edited",
   ATTENDANCE_DELETED: "DTR deleted",
@@ -30,6 +31,15 @@ const ACTION_LABELS = {
   NETWORK_RESTRICTION_OFF: "Shop network restriction off",
   NETWORK_ADDED: "Allowed network added",
   NETWORK_REMOVED: "Allowed network removed",
+  TIME_IN_REQUESTED: "Time in requested (off Wi-Fi)",
+  TIME_OUT_REQUESTED: "Time out requested (off Wi-Fi)",
+  TIME_REQUEST_APPROVED: "Time request approved",
+  TIME_REQUEST_REJECTED: "Time request rejected",
+  ATTENDANCE_BLOCKED_DEVICE: "Blocked: unregistered phone",
+  DEVICE_REGISTERED: "Phone registered",
+  DEVICE_RESET: "Registered phone reset",
+  DEVICE_BINDING_ON: "Device lock on",
+  DEVICE_BINDING_OFF: "Device lock off",
 };
 
 const actionLabel = (action) => ACTION_LABELS[action] || action;

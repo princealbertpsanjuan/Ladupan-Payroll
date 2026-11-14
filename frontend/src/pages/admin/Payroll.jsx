@@ -365,10 +365,44 @@ const Payroll = () => {
             </div>
           )}
 
+          {preview.pendingRecords?.length > 0 && (
+            <div className="lp-alert warning">
+              <strong>
+                {preview.pendingRecords.length} DTR record(s) are waiting for your approval
+              </strong>{" "}
+              (sent with Request Time In / Time Out) and are <strong>not included</strong> in this
+              payroll:
+              <ul>
+                {preview.pendingRecords.map((record) => (
+                  <li key={record._id}>
+                    {record.employeeName}: {record.date} ({record.timeIn || "-"} –{" "}
+                    {record.timeOut || "-"}
+                    {record.timeInPending && record.timeOutPending
+                      ? ", time in and time out requested"
+                      : record.timeInPending
+                        ? ", time in requested"
+                        : ", time out requested"}
+                    )
+                  </li>
+                ))}
+              </ul>
+              <p style={{ marginTop: 8 }}>
+                Approve or reject them in <Link to="/admin/corrections">DTR Corrections</Link>, then
+                preview again.
+              </p>
+            </div>
+          )}
+
           {preview.skipped.length > 0 && (
             <div className="lp-alert info">
-              Not included (no active DTR records in this period):{" "}
-              {preview.skipped.map((item) => item.employeeName).join(", ")}
+              Not included:{" "}
+              {preview.skipped
+                .map((item) =>
+                  item.reason?.includes("approval")
+                    ? `${item.employeeName} (only DTRs waiting for approval)`
+                    : item.employeeName
+                )
+                .join(", ")}
             </div>
           )}
 

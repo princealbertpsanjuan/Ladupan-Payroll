@@ -8,12 +8,15 @@ const {
   suggestNetworkFor,
 } = require("../utils/ipUtils");
 const { logAudit } = require("../utils/auditLogger");
+const User = require("../models/User");
+const { checkDevice } = require("../middleware/deviceGuard");
 
 const toResponse = (settings, req) => {
   const currentIp = getClientIp(req);
 
   return {
     restrictAttendanceNetwork: settings.restrictAttendanceNetwork,
+    deviceBinding: Boolean(settings.deviceBinding),
     allowedNetworks: settings.allowedNetworks,
     currentIp,
     currentIpAllowed: isAllowedIp(currentIp, settings.allowedNetworks),
@@ -27,11 +30,22 @@ exports.getNetworkSettings = async (req, res) => {
   try {
     const settings = await Setting.getSettings();
 
-    const recentBlocked = await AuditLog.find({ action: "ATTENDANCE_BLOCKED_NETWORK" })
+    const recentBlocked = await AuditLog.find({
+      action: { $in: ["ATTENDANCE_BLOCKED_NETWORK", "ATTENDANCE_BLOCKED_DEVICE"] },
+    })
       .sort({ createdAt: -1 })
       .limit(10);
 
-    res.json({ ...toResponse(settings, req), recentBlocked });
+    const [registeredDevices, activeEmployees] = await Promise.all([
+      User.countDocuments({ role: "employee", isActive: true, "boundDevice.idHash": { $ne: null } }),
+      User.countDocuments({ role: "employee", isActive: true }),
+    ]);
+
+    res.json({
+      ...toResponse(settings, req),
+      recentBlocked,
+      deviceStats: { registered: registeredDevices, employees: activeEmployees },
+    });
   } catch (error) {
     res.status(500).json({ message: "Failed to load settings", error: error.message });
   }
@@ -64,6 +78,33 @@ exports.setRestriction = async (req, res) => {
         ? "Turned ON: time in/out only from the shop network"
         : "Turned OFF: time in/out allowed from any network",
       details: { allowedNetworks: settings.allowedNetworks.map((n) => n.address) },
+    });
+
+    res.json(toResponse(settings, req));
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update settings", error: error.message });
+  }
+};
+
+// ADMIN: turn device binding (one registered phone per employee) on or off
+exports.setDeviceBinding = async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    if (typeof enabled !== "boolean") {
+      return res.status(400).json({ message: "enabled must be true or false" });
+    }
+
+    const settings = await Setting.getSettings();
+    settings.deviceBinding = enabled;
+    await settings.save();
+
+    await logAudit(req, {
+      action: enabled ? "DEVICE_BINDING_ON" : "DEVICE_BINDING_OFF",
+      entityType: "Setting",
+      description: enabled
+        ? "Turned ON: each employee can time in/out only on their registered phone"
+        : "Turned OFF: employees can time in/out on any phone",
     });
 
     res.json(toResponse(settings, req));
@@ -144,11 +185,25 @@ exports.getMyNetworkStatus = async (req, res) => {
     const settings = await Setting.getSettings();
     const ip = getClientIp(req);
 
+    // Device check only applies to employees (they are the ones who time in)
+    const device =
+      req.user.role === "employee"
+        ? await checkDevice(req, settings)
+        : { ok: true, enabled: false };
+
     res.json({
       restricted: settings.restrictAttendanceNetwork,
       allowed:
         !settings.restrictAttendanceNetwork || isAllowedIp(ip, settings.allowedNetworks),
       ip,
+      device: {
+        enabled: device.enabled,
+        ok: device.ok,
+        registered: Boolean(device.registered),
+        code: device.code || null,
+        message: device.message || null,
+        label: req.user.boundDevice?.label || "",
+      },
     });
   } catch (error) {
     res.status(500).json({ message: "Failed to check network", error: error.message });

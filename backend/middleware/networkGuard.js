@@ -9,6 +9,19 @@ const { getCurrentTime } = require("../utils/timeUtils");
 const ALERT_COOLDOWN_MS = 15 * 60 * 1000;
 const lastAlertAt = new Map();
 
+// Is this request coming from the shop network? (no side effects)
+const getNetworkCheck = async (req, settings) => {
+  const appSettings = settings || (await Setting.getSettings());
+  const ip = getClientIp(req);
+  const restricted = Boolean(appSettings.restrictAttendanceNetwork);
+
+  return {
+    restricted,
+    allowed: !restricted || isAllowedIp(ip, appSettings.allowedNetworks),
+    ip,
+  };
+};
+
 // Allows Time In / Time Out only from the shop's network when the
 // restriction is turned on. Viewing records is never restricted.
 const requireShopNetwork = (actionLabel) => async (req, res, next) => {
@@ -64,4 +77,4 @@ const requireShopNetwork = (actionLabel) => async (req, res, next) => {
   }
 };
 
-module.exports = { requireShopNetwork };
+module.exports = { requireShopNetwork, getNetworkCheck };

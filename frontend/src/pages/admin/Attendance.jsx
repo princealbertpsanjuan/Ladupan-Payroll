@@ -309,6 +309,11 @@ const Attendance = () => {
       <td>{formatDate(record.date)}</td>
       <td>
         {record.timeIn || "-"}
+        {record.timeInPending && (
+          <span className="adjusted-tag" title="Requested off the shop Wi-Fi. Approve it in DTR Corrections.">
+            requested
+          </span>
+        )}
         <div className="lp-muted">
           Required {record.requiredTimeIn || "-"}
           {isAdjusted(record) && (
@@ -320,6 +325,11 @@ const Attendance = () => {
       </td>
       <td>
         <TimeOutValue record={record} />
+        {record.timeOutPending && (
+          <span className="adjusted-tag" title="Requested off the shop Wi-Fi. Approve it in DTR Corrections.">
+            requested
+          </span>
+        )}
       </td>
       <td>{record.totalHours || 0}</td>
       <td>

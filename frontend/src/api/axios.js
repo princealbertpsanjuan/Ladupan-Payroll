@@ -1,4 +1,5 @@
 import axios from "axios";
+import { getDeviceId } from "../utils/deviceId";
 
 // Set VITE_API_URL in frontend/.env when the backend is hosted elsewhere,
 // e.g. VITE_API_URL=https://your-backend.onrender.com/api
@@ -12,6 +13,9 @@ api.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+
+  // Identifies this phone for device binding
+  config.headers["X-Device-Id"] = getDeviceId();
 
   return config;
 });

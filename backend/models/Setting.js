@@ -14,6 +14,12 @@ const settingSchema = new mongoose.Schema(
       default: false,
     },
 
+    // Each employee may time in / out from one registered phone only
+    deviceBinding: {
+      type: Boolean,
+      default: false,
+    },
+
     allowedNetworks: [
       {
         address: { type: String, required: true }, // IP or IPv4 CIDR range

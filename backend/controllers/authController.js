@@ -263,3 +263,42 @@ exports.changeEmail = async (req, res) => {
     });
   }
 };
+
+// CHANGE OWN NAME (admin; employees' names are managed in Employees)
+exports.changeName = async (req, res) => {
+  try {
+    const firstName = String(req.body.firstName || "").trim().replace(/\s+/g, " ");
+    const lastName = String(req.body.lastName || "").trim().replace(/\s+/g, " ");
+
+    if (!firstName || !lastName) {
+      return res.status(400).json({ message: "First name and last name are required" });
+    }
+
+    if (firstName.length > 60 || lastName.length > 60) {
+      return res.status(400).json({ message: "Names must be 60 characters or fewer" });
+    }
+
+    const user = await User.findById(req.user._id);
+    const oldName = `${user.firstName} ${user.lastName}`;
+
+    if (user.firstName === firstName && user.lastName === lastName) {
+      return res.status(400).json({ message: "This is already your name" });
+    }
+
+    user.firstName = firstName;
+    user.lastName = lastName;
+    await user.save();
+
+    await logAudit(req, {
+      action: "NAME_CHANGED",
+      entityType: "Employee",
+      entityId: user._id,
+      description: `${oldName} changed their name to ${firstName} ${lastName}`,
+      details: { changes: { name: { from: oldName, to: `${firstName} ${lastName}` } } },
+    });
+
+    res.json({ message: "Name updated", user: toUserResponse(user) });
+  } catch (error) {
+    res.status(500).json({ message: "Failed to change name", error: error.message });
+  }
+};

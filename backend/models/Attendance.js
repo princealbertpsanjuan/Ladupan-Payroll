@@ -66,6 +66,25 @@ const attendanceSchema = new mongoose.Schema(
       default: "Present",
     },
 
+    // Off-network requests (shop Wi-Fi down): the time is recorded by the
+    // server but waits for admin approval. Pending records are left out of
+    // payroll until approved.
+    timeInPending: {
+      type: Boolean,
+      default: false,
+    },
+
+    timeOutPending: {
+      type: Boolean,
+      default: false,
+    },
+
+    requestInfo: {
+      timeInIp: { type: String, default: "" },
+      timeOutIp: { type: String, default: "" },
+      note: { type: String, default: "" },
+    },
+
     isArchived: {
       type: Boolean,
       default: false,

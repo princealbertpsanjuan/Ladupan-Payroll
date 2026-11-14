@@ -282,6 +282,9 @@ exports.approveCorrection = async (req, res) => {
 
     attendance.timeIn = correction.requestedTimeIn;
     attendance.timeOut = correction.requestedTimeOut || null;
+    // The admin reviewed these times, so any waiting Time In / Out request is settled
+    attendance.timeInPending = false;
+    attendance.timeOutPending = false;
     applyAttendanceRules(attendance);
     await attendance.save();
 
