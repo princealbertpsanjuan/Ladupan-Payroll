@@ -17,6 +17,7 @@ const toResponse = (settings, req) => {
   return {
     restrictAttendanceNetwork: settings.restrictAttendanceNetwork,
     deviceBinding: Boolean(settings.deviceBinding),
+    allowTimeRequests: Boolean(settings.allowTimeRequests),
     allowedNetworks: settings.allowedNetworks,
     currentIp,
     currentIpAllowed: isAllowedIp(currentIp, settings.allowedNetworks),
@@ -78,6 +79,33 @@ exports.setRestriction = async (req, res) => {
         ? "Turned ON: time in/out only from the shop network"
         : "Turned OFF: time in/out allowed from any network",
       details: { allowedNetworks: settings.allowedNetworks.map((n) => n.address) },
+    });
+
+    res.json(toResponse(settings, req));
+  } catch (error) {
+    res.status(500).json({ message: "Failed to update settings", error: error.message });
+  }
+};
+
+// ADMIN: allow or stop off-network Time In / Time Out requests
+exports.setTimeRequests = async (req, res) => {
+  try {
+    const { enabled } = req.body;
+
+    if (typeof enabled !== "boolean") {
+      return res.status(400).json({ message: "enabled must be true or false" });
+    }
+
+    const settings = await Setting.getSettings();
+    settings.allowTimeRequests = enabled;
+    await settings.save();
+
+    await logAudit(req, {
+      action: enabled ? "TIME_REQUESTS_ON" : "TIME_REQUESTS_OFF",
+      entityType: "Setting",
+      description: enabled
+        ? "Allowed Request Time In / Time Out for employees outside the shop network"
+        : "Stopped Request Time In / Time Out",
     });
 
     res.json(toResponse(settings, req));
@@ -192,6 +220,7 @@ exports.getMyNetworkStatus = async (req, res) => {
         : { ok: true, enabled: false };
 
     res.json({
+      allowTimeRequests: Boolean(settings.allowTimeRequests),
       restricted: settings.restrictAttendanceNetwork,
       allowed:
         !settings.restrictAttendanceNetwork || isAllowedIp(ip, settings.allowedNetworks),

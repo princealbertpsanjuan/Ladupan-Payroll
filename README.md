@@ -197,8 +197,10 @@ scheduled end** (required time in + shift hours).
 
 ### Shop Wi-Fi down: Request Time In / Time Out
 
-When the restriction blocks an employee's connection, the buttons change to
-**Request Time In** / **Request Time Out**. The server records the time at the
+Off by default: employees only see **Time In** / **Time Out**. When the shop
+Wi-Fi or internet is down, turn on **Shop Network → Time requests**. While it's
+on, employees blocked by the restriction see **Request Time In** /
+**Request Time Out** instead. Turn it off again when the Wi-Fi works. The server records the time at the
 moment of the tap (the employee can't choose it), marks it *waiting for
 approval* and notifies the admins.
 

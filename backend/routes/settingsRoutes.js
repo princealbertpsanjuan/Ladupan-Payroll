@@ -5,6 +5,7 @@ const {
   getNetworkSettings,
   setRestriction,
   setDeviceBinding,
+  setTimeRequests,
   addNetwork,
   removeNetwork,
   getMyNetworkStatus,
@@ -20,6 +21,7 @@ router.get("/network/status", protect, getMyNetworkStatus);
 router.get("/network", protect, adminOnly, getNetworkSettings);
 router.put("/network/restriction", protect, adminOnly, setRestriction);
 router.put("/device-binding", protect, adminOnly, setDeviceBinding);
+router.put("/time-requests", protect, adminOnly, setTimeRequests);
 router.post("/network/allowed", protect, adminOnly, addNetwork);
 router.delete("/network/allowed/:id", protect, adminOnly, removeNetwork);
 

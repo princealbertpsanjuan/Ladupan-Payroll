@@ -121,8 +121,29 @@ const ShopNetwork = () => {
     }
   };
 
+  const toggleTimeRequests = async () => {
+    const turnOn = !data.allowTimeRequests;
+
+    try {
+      setBusy("requests");
+      const res = await api.put("/settings/time-requests", { enabled: turnOn });
+      applyResponse(res);
+      toast.success(
+        turnOn
+          ? "Employees outside the shop network can now send Request Time In / Time Out. Turn it off when the Wi-Fi is back."
+          : "Employees see only Time In and Time Out again.",
+        { title: turnOn ? "Time requests allowed" : "Time requests stopped" }
+      );
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to update the setting.");
+    } finally {
+      setBusy("");
+    }
+  };
+
   const enabled = Boolean(data?.restrictAttendanceNetwork);
   const deviceOn = Boolean(data?.deviceBinding);
+  const requestsOn = Boolean(data?.allowTimeRequests);
   const networks = data?.allowedNetworks || [];
 
   return (
@@ -171,6 +192,35 @@ const ShopNetwork = () => {
               >
                 <span className="lp-switch-knob">{busy === "toggle" && <Spinner />}</span>
                 <span className="sr-only">Restrict Time In / Time Out to the shop network</span>
+              </button>
+            </div>
+
+            <div className={`lp-card network-status-card${requestsOn ? " is-on" : ""}`}>
+              <div className="network-status-main">
+                <span className={`card-icon ${requestsOn ? "dark" : ""}`}>
+                  <Icon name="clock" />
+                </span>
+
+                <div>
+                  <h2>{requestsOn ? "Time requests are ALLOWED" : "Time requests are OFF"}</h2>
+                  <p>
+                    {requestsOn
+                      ? "Employees who can't reach the shop network see Request Time In / Time Out. You approve each one in DTR Corrections. Turn this off when the shop Wi-Fi works again."
+                      : "Employees only see Time In and Time Out. Turn this on if the shop Wi-Fi or internet is down, so they can send a request for you to approve."}
+                  </p>
+                </div>
+              </div>
+
+              <button
+                type="button"
+                role="switch"
+                aria-checked={requestsOn}
+                className={`lp-switch${requestsOn ? " is-on" : ""}`}
+                onClick={toggleTimeRequests}
+                disabled={busy === "requests"}
+              >
+                <span className="lp-switch-knob">{busy === "requests" && <Spinner />}</span>
+                <span className="sr-only">Allow time requests</span>
               </button>
             </div>
 

@@ -41,6 +41,8 @@ const ACTION_LABELS = {
   DEVICE_REGISTERED: "Phone registered",
   DEVICE_RESET: "Registered phone reset",
   DEVICE_BINDING_ON: "Device lock on",
+  TIME_REQUESTS_ON: "Time requests allowed",
+  TIME_REQUESTS_OFF: "Time requests stopped",
   DEVICE_BINDING_OFF: "Device lock off",
 };
 

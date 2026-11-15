@@ -84,7 +84,7 @@ const TimeInOut = () => {
       });
       setAttendance(res.data.attendance);
     } catch (err) {
-      if (/OUTSIDE_SHOP_NETWORK|^DEVICE_/.test(err.response?.data?.code || "")) fetchNetworkStatus();
+      if (/OUTSIDE_SHOP_NETWORK|TIME_REQUESTS_OFF|^DEVICE_/.test(err.response?.data?.code || "")) fetchNetworkStatus();
 
       setMessage({
         type: "error",
@@ -108,7 +108,7 @@ const TimeInOut = () => {
       setMessage({ type: request ? "warning" : "success", text: res.data.message });
       if (res.data.attendance?.date === serverDate) setAttendance(res.data.attendance);
     } catch (err) {
-      if (/OUTSIDE_SHOP_NETWORK|^DEVICE_/.test(err.response?.data?.code || "")) fetchNetworkStatus();
+      if (/OUTSIDE_SHOP_NETWORK|TIME_REQUESTS_OFF|^DEVICE_/.test(err.response?.data?.code || "")) fetchNetworkStatus();
 
       setMessage({
         type: "error",
@@ -124,6 +124,8 @@ const TimeInOut = () => {
   };
 
   const offNetwork = Boolean(network?.restricted && !network?.allowed);
+  // Request buttons only while the admin allows time requests
+  const canRequest = offNetwork && Boolean(network?.allowTimeRequests);
   const device = network?.device;
   const deviceBlocked = Boolean(device?.enabled && !device?.ok);
   const willRegisterDevice = Boolean(device?.enabled && device?.ok && !device?.registered);
@@ -174,8 +176,19 @@ const TimeInOut = () => {
               <button type="button" className="link-btn" onClick={fetchNetworkStatus}>
                 check again
               </button>
-              . If the shop Wi-Fi is down, tap <strong>Request Time In / Time Out</strong>:
-              the time is recorded now and counts once the admin approves it.
+              .{" "}
+              {network?.allowTimeRequests ? (
+                <>
+                  The admin turned on time requests: tap{" "}
+                  <strong>Request Time In / Time Out</strong>. The time is recorded now and counts
+                  once the admin approves it.
+                </>
+              ) : (
+                <>
+                  If you're at the shop and still see this, show the admin the address below
+                  (Your connection).
+                </>
+              )}
               {network?.ip && (
                 <div className="lp-muted" style={{ marginTop: 6 }}>
                   Your connection: {network.ip}
@@ -226,8 +239,8 @@ const TimeInOut = () => {
         <div className="time-actions">
           <button
             className="time-in-btn"
-            onClick={() => handleTimeIn(offNetwork)}
-            disabled={loading || checking || !canTimeIn || deviceBlocked}
+            onClick={() => handleTimeIn(canRequest)}
+            disabled={loading || checking || !canTimeIn || deviceBlocked || (offNetwork && !canRequest)}
             aria-busy={busyAction === "in"}
           >
             {busyAction === "in" && <Spinner />}
@@ -235,15 +248,15 @@ const TimeInOut = () => {
               ? "Recording..."
               : hasTimedIn
                 ? "Timed In ✓"
-                : offNetwork
+                : canRequest
                   ? "Request Time In"
                   : "Time In"}
           </button>
 
           <button
             className="time-out-btn"
-            onClick={() => handleTimeOut(offNetwork)}
-            disabled={loading || checking || !canTimeOut || deviceBlocked}
+            onClick={() => handleTimeOut(canRequest)}
+            disabled={loading || checking || !canTimeOut || deviceBlocked || (offNetwork && !canRequest)}
             aria-busy={busyAction === "out"}
           >
             {busyAction === "out" && <Spinner />}
@@ -251,7 +264,7 @@ const TimeInOut = () => {
               ? "Recording..."
               : hasTimedOut
                 ? "Timed Out ✓"
-                : offNetwork && canTimeOut
+                : canRequest && canTimeOut
                   ? "Request Time Out"
                   : "Time Out"}
           </button>

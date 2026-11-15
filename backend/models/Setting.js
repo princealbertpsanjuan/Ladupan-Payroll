@@ -14,6 +14,13 @@ const settingSchema = new mongoose.Schema(
       default: false,
     },
 
+    // Off-network "Request Time In / Time Out" buttons (for when the shop
+    // Wi-Fi is down). Off unless the admin turns it on.
+    allowTimeRequests: {
+      type: Boolean,
+      default: false,
+    },
+
     // Each employee may time in / out from one registered phone only
     deviceBinding: {
       type: Boolean,

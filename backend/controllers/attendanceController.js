@@ -24,6 +24,7 @@ const {
   OVERTIME_REVIEW_MINUTES,
 } = require("../utils/attendanceRules");
 const { getNetworkCheck } = require("../middleware/networkGuard");
+const Setting = require("../models/Setting");
 
 const snapshot = (record) => ({
   date: record.date,
@@ -286,7 +287,17 @@ exports.timeOut = (req, res) => recordTimeOut(req, res);
 // Only used when the shop-network restriction blocks this connection;
 // on the shop Wi-Fi the normal buttons work.
 const requestGuard = async (req, res) => {
-  const network = await getNetworkCheck(req);
+  const settings = await Setting.getSettings();
+
+  if (!settings.allowTimeRequests) {
+    res.status(403).json({
+      code: "TIME_REQUESTS_OFF",
+      message: "Time requests are turned off. Connect to the shop Wi-Fi, or ask the admin.",
+    });
+    return null;
+  }
+
+  const network = await getNetworkCheck(req, settings);
 
   if (network.allowed) {
     res.status(400).json({
