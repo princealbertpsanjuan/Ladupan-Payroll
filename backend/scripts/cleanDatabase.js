@@ -38,6 +38,8 @@ const Notification = require("../models/Notification");
 const AuditLog = require("../models/AuditLog");
 const Counter = require("../models/Counter");
 const Setting = require("../models/Setting");
+const RestDay = require("../models/RestDay");
+const ShopDevice = require("../models/ShopDevice");
 
 const args = process.argv.slice(2);
 // PowerShell can drop the "--" in `npm run clean-db -- --confirm`, so npm
@@ -62,6 +64,7 @@ const DELETE_ALL = [
   { label: "DTR correction requests", model: CorrectionRequest },
   { label: "Notifications", model: Notification },
   { label: "Audit log entries", model: AuditLog },
+  { label: "Rest days (schedule)", model: RestDay },
 ];
 
 const backupDatabase = async () => {
@@ -69,7 +72,7 @@ const backupDatabase = async () => {
   const folder = path.join(__dirname, "..", "backups", `backup-${stamp}`);
   fs.mkdirSync(folder, { recursive: true });
 
-  const models = [User, Attendance, PayrollReport, CashAdvance, CorrectionRequest, Notification, AuditLog, Counter, Setting];
+  const models = [User, Attendance, PayrollReport, CashAdvance, CorrectionRequest, Notification, AuditLog, Counter, Setting, RestDay, ShopDevice];
 
   for (const model of models) {
     const docs = await model.find().lean();

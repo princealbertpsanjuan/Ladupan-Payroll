@@ -4,6 +4,7 @@ const PayrollReport = require("../models/PayrollReport");
 const CashAdvance = require("../models/CashAdvance");
 const User = require("../models/User");
 const { isIncomplete, roundMoney, needsOvertimeReview } = require("../utils/attendanceRules");
+const { getNoShows } = require("../utils/absenceUtils");
 const { getBalances } = require("../utils/cashAdvanceUtils");
 const { isValidDate, getToday } = require("../utils/timeUtils");
 const { logAudit, fullName } = require("../utils/auditLogger");
@@ -48,6 +49,10 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
   const pendingRecords = [];
   // Overtime not reviewed yet: paid only up to the scheduled end for now
   const overtimeRecords = [];
+
+  // Scheduled work days with no time-in (rest days excluded): counted as
+  // Absent, 0 pay
+  const noShows = await getNoShows({ employees, startDate, endDate });
 
   for (const employee of employees) {
     const allRecords = await Attendance.find({
@@ -131,6 +136,9 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
       if (record.remarks === "Absent") totalAbsent++;
     });
 
+    const noShowDates = noShows[String(employee._id)] || [];
+    totalAbsent += noShowDates.length;
+
     rows.push({
       employee: employee._id,
       employeeName: fullName(employee),
@@ -140,6 +148,8 @@ const buildPayroll = async ({ startDate, endDate, employeeIds }) => {
       totalLate,
       totalAbsent,
       totalIncomplete,
+      noShowDays: noShowDates.length,
+      noShowDates,
       totalLateMinutes,
       totalHours: Number(totalHours.toFixed(2)),
       grossSalary: roundMoney(grossSalary),
@@ -275,6 +285,8 @@ exports.generatePayroll = async (req, res) => {
         totalLate: row.totalLate,
         totalAbsent: row.totalAbsent,
         totalIncomplete: row.totalIncomplete,
+        noShowDays: row.noShowDays,
+        noShowDates: row.noShowDates,
         totalLateMinutes: row.totalLateMinutes,
         totalHours: row.totalHours,
         grossSalary: row.grossSalary,

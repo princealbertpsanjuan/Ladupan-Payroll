@@ -19,9 +19,8 @@ const {
 const { logAudit, fullName } = require("../utils/auditLogger");
 const { notifyUser, notifyAdmins } = require("../utils/notify");
 const {
-  scheduledEndTime,
+  overtimeStartTime,
   needsOvertimeReview,
-  OVERTIME_REVIEW_MINUTES,
 } = require("../utils/attendanceRules");
 const { getNetworkCheck } = require("../middleware/networkGuard");
 const Setting = require("../models/Setting");
@@ -134,7 +133,6 @@ const recordTimeIn = async (req, res, { pending = false, ip = "" } = {}) => {
       requiredTimeIn: employee.requiredTimeIn,
       timeIn: currentTime,
       hourlyRate: employee.hourlyRate,
-      scheduledHours: employee.shiftHours || 12,
       timeInPending: pending,
       requestInfo: { timeInIp: pending ? ip : "" },
     });
@@ -246,19 +244,19 @@ const recordTimeOut = async (req, res, { pending = false, ip = "" } = {}) => {
       });
     }
 
-    // Worked well past the scheduled end (or came back late to time out):
-    // only the scheduled hours are paid until the admin reviews the overtime
+    // Past required time-in + 14 hours (stayed very late, or came back
+    // later to time out): that part is paid only if the admin approves it
     const overtimeNote =
       attendance.overtimeMinutes > 0
-        ? ` Your schedule ended at ${scheduledEndTime(attendance.requiredTimeIn, attendance.scheduledHours)}; the extra ${formatMinutes(attendance.overtimeMinutes)} is paid only if the admin approves it as overtime.`
+        ? ` Time after ${overtimeStartTime(attendance.requiredTimeIn)} (${formatMinutes(attendance.overtimeMinutes)}) is overtime and is paid only if the admin approves it.`
         : "";
 
     if (needsOvertimeReview(attendance)) {
       await notifyAdmins({
         type: "overtime_review",
         level: "warning",
-        title: `${fullName(employee)} timed out ${formatMinutes(attendance.overtimeMinutes)} after their shift`,
-        message: `${attendance.date}: scheduled end ${scheduledEndTime(attendance.requiredTimeIn, attendance.scheduledHours)}, timed out ${currentTime}. Approve the overtime in DTR Corrections if it was real.`,
+        title: `${fullName(employee)} has ${formatMinutes(attendance.overtimeMinutes)} overtime`,
+        message: `${attendance.date}: timed out ${currentTime}, past the 14-hour limit (${overtimeStartTime(attendance.requiredTimeIn)}). Pay it or not in DTR Corrections.`,
         link: "/admin/corrections",
       });
     }
@@ -336,16 +334,15 @@ const formatMinutes = (minutes) => {
   return h ? `${h}h${m ? ` ${String(m).padStart(2, "0")}m` : ""}` : `${m}m`;
 };
 
-// ADMIN: completed shifts with 30+ minutes past the scheduled end that
-// haven't been reviewed yet
+// ADMIN: completed shifts with time past the 14-hour limit that haven't
+// been reviewed yet
 exports.getOvertimeToReview = async (req, res) => {
   try {
     const records = await Attendance.find({
       isArchived: false,
       overtimeReviewed: false,
-      scheduledHours: { $ne: null },
       timeOut: { $ne: null },
-      overtimeMinutes: { $gte: OVERTIME_REVIEW_MINUTES },
+      overtimeMinutes: { $gt: 0 },
     })
       .populate("employee", "firstName lastName employeeId")
       .sort({ date: -1 });
@@ -353,7 +350,7 @@ exports.getOvertimeToReview = async (req, res) => {
     res.json(
       records.map((record) => ({
         ...record.toObject(),
-        scheduledEnd: scheduledEndTime(record.requiredTimeIn, record.scheduledHours),
+        overtimeStarts: overtimeStartTime(record.requiredTimeIn),
       }))
     );
   } catch (error) {
@@ -682,7 +679,6 @@ exports.createAttendance = async (req, res) => {
       timeIn,
       timeOut: timeOut || null,
       hourlyRate: employee.hourlyRate,
-      scheduledHours: employee.shiftHours || 12,
     });
 
     applyAttendanceRules(attendance);

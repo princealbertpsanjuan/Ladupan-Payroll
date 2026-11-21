@@ -3,9 +3,10 @@
 // - Late:    time-in is after the required time-in but less than 90 minutes late
 // - Absent:  time-in is 90 minutes late or more (0 hours, ₱0 gross pay)
 //
-// Paid hours are counted from the ACTUAL time-in to the time-out, but stop
-// at the scheduled end (required time-in + shift hours). Time after that is
-// overtime: recorded, and paid only when the admin approves it.
+// Paid hours are counted from the ACTUAL time-in to the time-out, without
+// approval up to the overtime limit: required time-in + 14 hours (the same
+// for every employee). Every minute after that is overtime: recorded, and
+// paid only when the admin approves it.
 // Lateness already reduces the paid hours, so no separate late deduction is
 // charged (lateDeduction is always 0). Late minutes are still recorded.
 
@@ -62,10 +63,13 @@ const timeInOffset = (requiredTimeIn, timeIn) => {
   return difference;
 };
 
-// Scheduled end as HH:mm (e.g. 18:00 + 12h -> 06:00)
-const scheduledEndTime = (requiredTimeIn, scheduledHours) => {
-  if (!requiredTimeIn || !scheduledHours) return null;
-  const total = (timeToMinutes(requiredTimeIn) + Math.round(scheduledHours * 60)) % (24 * 60);
+// Time counted without approval: up to required time-in + 14 hours
+const OVERTIME_AFTER_HOURS = 14;
+
+// When overtime starts, as HH:mm (06:00 -> 20:00, 18:00 -> 08:00)
+const overtimeStartTime = (requiredTimeIn) => {
+  if (!requiredTimeIn) return null;
+  const total = (timeToMinutes(requiredTimeIn) + OVERTIME_AFTER_HOURS * 60) % (24 * 60);
   return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 };
 
@@ -92,7 +96,6 @@ const calculateAttendance = ({
   timeIn,
   timeOut,
   hourlyRate,
-  scheduledHours = null,
   overtimeApproved = false,
 }) => {
   const { lateMinutes, remarks } = calculateTimeIn({ requiredTimeIn, timeIn });
@@ -112,18 +115,14 @@ const calculateAttendance = ({
   // Counts across midnight (18:00 -> 06:00 = 12 hours)
   const workedMinutes = shiftMinutes(timeIn, timeOut);
 
-  // Minutes from the actual time-in to the scheduled end
-  let overtimeMinutes = 0;
-  let paidMinutes = workedMinutes;
-
-  if (scheduledHours) {
-    const untilScheduledEnd = Math.max(
-      0,
-      Math.round(scheduledHours * 60) - timeInOffset(requiredTimeIn, timeIn)
-    );
-    overtimeMinutes = Math.max(0, workedMinutes - untilScheduledEnd);
-    if (!overtimeApproved) paidMinutes = workedMinutes - overtimeMinutes;
-  }
+  // Minutes from the actual time-in to the overtime limit
+  // (required time-in + 14 hours)
+  const untilLimit = Math.max(
+    0,
+    OVERTIME_AFTER_HOURS * 60 - timeInOffset(requiredTimeIn, timeIn)
+  );
+  const overtimeMinutes = Math.max(0, workedMinutes - untilLimit);
+  const paidMinutes = overtimeApproved ? workedMinutes : workedMinutes - overtimeMinutes;
 
   const totalHours = Number((paidMinutes / 60).toFixed(2));
   const lateHours = Number((lateMinutes / 60).toFixed(2));
@@ -162,7 +161,6 @@ const applyAttendanceRules = (attendance) => {
       timeIn: attendance.timeIn,
       timeOut: attendance.timeOut,
       hourlyRate: attendance.hourlyRate,
-      scheduledHours: attendance.scheduledHours,
       overtimeApproved: attendance.overtimeApproved,
     });
 
@@ -191,15 +189,9 @@ const applyAttendanceRules = (attendance) => {
 
 // A record is incomplete when the employee timed in but never timed out.
 // Absent records are already final (0 hours) and do not need a time-out.
-// Overtime worth the admin's attention (30+ minutes, not reviewed yet)
-const OVERTIME_REVIEW_MINUTES = 30;
+// Any time past the overtime limit that the admin hasn't reviewed yet
 const needsOvertimeReview = (attendance) =>
-  Boolean(
-    attendance.scheduledHours &&
-      attendance.timeOut &&
-      attendance.overtimeMinutes >= OVERTIME_REVIEW_MINUTES &&
-      !attendance.overtimeReviewed
-  );
+  Boolean(attendance.timeOut && attendance.overtimeMinutes > 0 && !attendance.overtimeReviewed);
 
 const isIncomplete = (attendance) => {
   return Boolean(
@@ -216,12 +208,12 @@ module.exports = {
   validateShiftTimes,
   timeToMinutes,
   timeInOffset,
-  scheduledEndTime,
+  OVERTIME_AFTER_HOURS,
+  overtimeStartTime,
   roundMoney,
   calculateTimeIn,
   calculateAttendance,
   applyAttendanceRules,
   isIncomplete,
-  OVERTIME_REVIEW_MINUTES,
   needsOvertimeReview,
 };

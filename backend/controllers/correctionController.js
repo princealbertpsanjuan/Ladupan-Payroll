@@ -16,7 +16,7 @@ const {
 const { logAudit, fullName } = require("../utils/auditLogger");
 const { notifyUser, notifyAdmins } = require("../utils/notify");
 
-const EMPLOYEE_FIELDS = "employeeId firstName lastName shiftHours";
+const EMPLOYEE_FIELDS = "employeeId firstName lastName";
 
 // EMPLOYEE: SUBMIT A CORRECTION REQUEST
 exports.createCorrection = async (req, res) => {
@@ -277,7 +277,6 @@ exports.approveCorrection = async (req, res) => {
         date: correction.date,
         requiredTimeIn: correction.employee.requiredTimeIn,
         hourlyRate: correction.employee.hourlyRate,
-        scheduledHours: correction.employee.shiftHours || 12,
       });
     }
 

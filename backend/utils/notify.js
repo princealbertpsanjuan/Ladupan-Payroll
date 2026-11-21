@@ -3,10 +3,10 @@ const User = require("../models/User");
 
 // Send a notification to one user. Never throws: a failed notification
 // must not break the action that triggered it.
-const notifyUser = async (userId, { type, level = "info", title, message = "", link = "" }) => {
+const notifyUser = async (userId, { type, level = "info", title, message = "", link = "", meta = null }) => {
   try {
     if (!userId) return;
-    await Notification.create({ recipient: userId, type, level, title, message, link });
+    await Notification.create({ recipient: userId, type, level, title, message, link, meta });
   } catch (error) {
     console.error("Notification failed:", error.message);
   }

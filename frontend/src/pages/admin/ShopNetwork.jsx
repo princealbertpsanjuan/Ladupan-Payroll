@@ -17,6 +17,8 @@ const ShopNetwork = () => {
   const [currentLabel, setCurrentLabel] = useState("");
   const [manual, setManual] = useState({ address: "", label: "" });
   const [manualError, setManualError] = useState("");
+  const [pairLabel, setPairLabel] = useState("");
+  const [pairResult, setPairResult] = useState(null);
 
   useEffect(() => {
     fetchSettings();
@@ -87,6 +89,45 @@ const ShopNetwork = () => {
       toast.success(`${network.address} was removed.`);
     } catch (error) {
       toast.error(error.response?.data?.message || "Failed to remove network.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  // Shop devices: a phone/tablet at each branch keeps its address up to date
+  const startPairing = async (e) => {
+    e.preventDefault();
+
+    try {
+      setBusy("pair");
+      const res = await api.post("/settings/shop-devices", { label: pairLabel });
+      setPairResult(res.data);
+      setPairLabel("");
+      fetchSettings();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to start pairing.");
+    } finally {
+      setBusy("");
+    }
+  };
+
+  const unpairDevice = async (device) => {
+    if (
+      !window.confirm(
+        `Unpair the ${device.label} shop device?\n\nIt stops updating ${device.label}'s address, and the address it added is removed from the allowed list.`
+      )
+    ) {
+      return;
+    }
+
+    try {
+      setBusy(`dev-${device._id}`);
+      const res = await api.delete(`/settings/shop-devices/${device._id}`);
+      toast.success(res.data.message);
+      if (pairResult?.device?._id === device._id) setPairResult(null);
+      fetchSettings();
+    } catch (error) {
+      toast.error(error.response?.data?.message || "Failed to unpair.");
     } finally {
       setBusy("");
     }
@@ -254,6 +295,97 @@ const ShopNetwork = () => {
             </div>
 
             <div className="lp-card">
+              <h2>Shop devices</h2>
+              <p className="lp-card-subtitle">
+                A phone or tablet that stays at each branch on the shop Wi-Fi. It checks in every
+                minute, so when a power interruption changes the shop's internet address, the
+                allowed address updates by itself. No more adding it by hand.
+              </p>
+
+              {(data.shopDevices || []).length > 0 && (
+                <div className="lp-table-wrap">
+                  <table className="lp-table">
+                    <thead>
+                      <tr>
+                        <th>Branch</th>
+                        <th>Status</th>
+                        <th>Address</th>
+                        <th>Device</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {data.shopDevices.map((device) => (
+                        <tr key={device._id}>
+                          <td>
+                            <strong>{device.label}</strong>
+                          </td>
+                          <td className="lp-nowrap">
+                            {!device.paired ? (
+                              <span className="lp-badge pending no-caps">Waiting for pairing</span>
+                            ) : device.online ? (
+                              <span className="lp-badge approved no-caps">Online</span>
+                            ) : (
+                              <span className="lp-badge rejected no-caps">Offline</span>
+                            )}
+                            {device.lastSeenAt && (
+                              <div className="lp-muted">Last check {formatDateTime(device.lastSeenAt)}</div>
+                            )}
+                          </td>
+                          <td className="lp-nowrap">{device.lastAddresses?.join(", ") || "-"}</td>
+                          <td className="lp-muted">{device.deviceInfo || "-"}</td>
+                          <td>
+                            <button
+                              type="button"
+                              className="lp-btn secondary small"
+                              onClick={() => unpairDevice(device)}
+                              disabled={busy === `dev-${device._id}`}
+                              aria-busy={busy === `dev-${device._id}`}
+                            >
+                              {busy === `dev-${device._id}` && <Spinner />}
+                              {device.paired ? "Unpair" : "Cancel"}
+                            </button>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+
+              {pairResult ? (
+                <div className="lp-alert info pair-code-box">
+                  <div>
+                    <strong>Pairing code for {pairResult.device.label}:</strong>
+                    <div className="pair-code">{pairResult.code}</div>
+                    On the branch phone or tablet (on the shop Wi-Fi), open{" "}
+                    <strong>{window.location.origin}/shop-device</strong> in Chrome and enter this
+                    code within {pairResult.expiresInMinutes} minutes.
+                  </div>
+                  <button type="button" className="link-btn" onClick={() => setPairResult(null)}>
+                    Done
+                  </button>
+                </div>
+              ) : (
+                <form className="pair-form" onSubmit={startPairing}>
+                  <input
+                    type="text"
+                    value={pairLabel}
+                    onChange={(e) => setPairLabel(e.target.value)}
+                    placeholder="Branch name, e.g. Main branch"
+                    aria-label="Branch name"
+                    maxLength={60}
+                    required
+                  />
+                  <button type="submit" className="lp-btn" disabled={busy === "pair"} aria-busy={busy === "pair"}>
+                    {busy === "pair" && <Spinner />}
+                    Pair a shop device
+                  </button>
+                </form>
+              )}
+            </div>
+
+            <div className="lp-card">
               <h2>Your current connection</h2>
               <p className="lp-card-subtitle">
                 Open this page on a device connected to a shop's Wi-Fi, then add
@@ -325,7 +457,12 @@ const ShopNetwork = () => {
                               <span className="lp-muted"> · you're here</span>
                             )}
                           </td>
-                          <td>{network.label || "-"}</td>
+                          <td>
+                            {network.label || "-"}
+                            {network.shopDevice && (
+                              <div className="lp-muted">Kept up to date by the shop device</div>
+                            )}
+                          </td>
                           <td className="lp-muted">{formatDateTime(network.addedAt)}</td>
                           <td>
                             <button

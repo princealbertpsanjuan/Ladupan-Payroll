@@ -23,15 +23,8 @@ const attendanceSchema = new mongoose.Schema(
       default: null,
     },
 
-    // Shift length when this DTR was created (from the employee). Paid
-    // time stops at requiredTimeIn + scheduledHours unless overtime is
-    // approved. null = no cap (records from before this rule).
-    scheduledHours: {
-      type: Number,
-      default: null,
-    },
 
-    // Minutes worked after the scheduled end (calculated)
+    // Minutes worked after required time-in + 14 hours (calculated)
     overtimeMinutes: {
       type: Number,
       default: 0,

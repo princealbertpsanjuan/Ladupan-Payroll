@@ -16,16 +16,14 @@ const emptyForm = {
   password: "",
   hourlyRate: "",
   requiredTimeIn: "06:00",
-  shiftHours: "12",
 };
 
-// Scheduled end, e.g. 18:00 + 12h -> 06:00 (next day)
-const shiftEnd = (timeIn, hours) => {
-  if (!timeIn || !hours) return "";
+// Overtime starts at required time-in + 14 hours (06:00 -> 20:00)
+const overtimeStart = (timeIn) => {
+  if (!timeIn) return "";
   const [h, m] = timeIn.split(":").map(Number);
-  const total = (h * 60 + m + Math.round(Number(hours) * 60)) % 1440;
-  const end = `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
-  return h * 60 + m + Number(hours) * 60 >= 1440 ? `${end} next day` : end;
+  const total = (h * 60 + m + 14 * 60) % 1440;
+  return `${String(Math.floor(total / 60)).padStart(2, "0")}:${String(total % 60).padStart(2, "0")}`;
 };
 
 const SORT_ACCESSORS = {
@@ -98,7 +96,6 @@ const Employees = () => {
       password: "",
       hourlyRate: employee.hourlyRate ?? "",
       requiredTimeIn: employee.requiredTimeIn || "06:00",
-      shiftHours: String(employee.shiftHours || 12),
     });
     setFormError("");
     setShowFormModal(true);
@@ -125,7 +122,6 @@ const Employees = () => {
           email: form.email,
           hourlyRate: form.hourlyRate,
           requiredTimeIn: form.requiredTimeIn,
-          shiftHours: form.shiftHours,
         };
 
         // Only reset the password when the admin typed a new one
@@ -303,7 +299,7 @@ const Employees = () => {
                 <SortableTh label="Name" column="name" sort={sort} onSort={toggleSort} />
                 <SortableTh label="Email" column="email" sort={sort} onSort={toggleSort} />
                 <SortableTh label="Hourly Rate" column="hourlyRate" sort={sort} onSort={toggleSort} />
-                <SortableTh label="Schedule" column="requiredTimeIn" sort={sort} onSort={toggleSort} />
+                <SortableTh label="Required Time In" column="requiredTimeIn" sort={sort} onSort={toggleSort} />
                 <SortableTh label="Status" column="status" sort={sort} onSort={toggleSort} />
                 <th>Phone</th>
                 <th>Actions</th>
@@ -322,8 +318,8 @@ const Employees = () => {
                   <td>{emp.email}</td>
                   <td>₱{Number(emp.hourlyRate || 0).toFixed(2)}</td>
                   <td className="lp-nowrap">
-                    {emp.requiredTimeIn} – {shiftEnd(emp.requiredTimeIn, emp.shiftHours || 12).replace(" next day", "")}
-                    <div className="lp-muted">{emp.shiftHours || 12} hrs</div>
+                    {emp.requiredTimeIn}
+                    <div className="lp-muted">OT after {overtimeStart(emp.requiredTimeIn)}</div>
                   </td>
                   <td>
                     <span
@@ -507,25 +503,11 @@ const Employees = () => {
                   />
                 </div>
 
-                <div className="lp-field">
-                  <label>Shift Hours</label>
-                  <select name="shiftHours" value={form.shiftHours} onChange={handleChange}>
-                    {[8, 9, 10, 11, 12, 13, 14, 15, 16].map((h) => (
-                      <option key={h} value={String(h)}>
-                        {h} hours
-                      </option>
-                    ))}
-                  </select>
-                  <small className="lp-muted">
-                    Shift ends {shiftEnd(form.requiredTimeIn, form.shiftHours)}. Time after that is
-                    paid only if you approve it as overtime.
-                  </small>
-                </div>
               </div>
 
               {editingEmployee && (
                 <p className="lp-muted">
-                  Rate, time-in and shift-hour changes apply to new DTR records.
+                  Rate and time-in changes apply to new DTR records.
                   Existing records keep what they were recorded with.
                 </p>
               )}

@@ -55,6 +55,8 @@ const buildPayslip = async (reportId, employeeId) => {
       totalLate: entry.totalLate || 0,
       totalAbsent: entry.totalAbsent || 0,
       totalIncomplete: entry.totalIncomplete || 0,
+      noShowDays: entry.noShowDays || 0,
+      noShowDates: entry.noShowDates || [],
       totalLateMinutes: entry.totalLateMinutes || 0,
       totalHours: entry.totalHours || 0,
       grossSalary: entry.grossSalary || 0,

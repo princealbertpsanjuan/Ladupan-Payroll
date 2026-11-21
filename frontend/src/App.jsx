@@ -6,6 +6,9 @@ import Login from "./pages/auth/Login";
 import Dashboard from "./pages/admin/Dashboard";
 import Employees from "./pages/admin/Employees";
 import Attendance from "./pages/admin/Attendance";
+import Schedule from "./pages/admin/Schedule";
+import ShopDevicePage from "./pages/ShopDevicePage";
+import MySchedule from "./pages/client/MySchedule";
 import Payroll from "./pages/admin/Payroll";
 import Reports from "./pages/admin/Reports";
 import Archives from "./pages/admin/Archives";
@@ -45,6 +48,7 @@ function App() {
       <Routes>
         {/* LOGIN */}
         <Route path="/" element={<Login />} />
+        <Route path="/shop-device" element={<ShopDevicePage />} />
 
         {/* ADMIN ROUTES */}
         <Route
@@ -57,6 +61,7 @@ function App() {
           <Route path="/admin/dashboard" element={<Dashboard />} />
           <Route path="/admin/employees" element={<Employees />} />
           <Route path="/admin/attendance" element={<Attendance />} />
+          <Route path="/admin/schedule" element={<Schedule />} />
           <Route path="/admin/payroll" element={<Payroll />} />
           <Route path="/admin/reports" element={<Reports />} />
           <Route path="/admin/archives" element={<Archives />} />
@@ -82,6 +87,7 @@ function App() {
           <Route path="/client/dashboard" element={<ClientDashboard />} />
           <Route path="/client/time" element={<TimeInOut />} />
           <Route path="/client/records" element={<MyRecords />} />
+          <Route path="/client/schedule" element={<MySchedule />} />
           <Route path="/client/archives" element={<MyArchives />} />
           <Route path="/client/account" element={<MyAccount />} />
           <Route path="/client/payslips" element={<MyPayslips />} />

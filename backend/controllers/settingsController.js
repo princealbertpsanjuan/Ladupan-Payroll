@@ -10,6 +10,7 @@ const {
 const { logAudit } = require("../utils/auditLogger");
 const User = require("../models/User");
 const { checkDevice } = require("../middleware/deviceGuard");
+const { listDevices } = require("./shopDeviceController");
 
 const toResponse = (settings, req) => {
   const currentIp = getClientIp(req);
@@ -44,6 +45,7 @@ exports.getNetworkSettings = async (req, res) => {
 
     res.json({
       ...toResponse(settings, req),
+      shopDevices: await listDevices(),
       recentBlocked,
       deviceStats: { registered: registeredDevices, employees: activeEmployees },
     });

@@ -14,6 +14,18 @@ const settingSchema = new mongoose.Schema(
       default: false,
     },
 
+    // First day no-show absences are counted (set once on deploy)
+    absenceTrackingFrom: {
+      type: String,
+      default: null,
+    },
+
+    // One-time startup data updates already done (see utils/startupTasks)
+    completedTasks: {
+      type: [String],
+      default: [],
+    },
+
     // Off-network "Request Time In / Time Out" buttons (for when the shop
     // Wi-Fi is down). Off unless the admin turns it on.
     allowTimeRequests: {
@@ -32,6 +44,8 @@ const settingSchema = new mongoose.Schema(
         address: { type: String, required: true }, // IP or IPv4 CIDR range
         label: { type: String, default: "" },
         addedAt: { type: Date, default: Date.now },
+        // Set when a paired shop device keeps this address up to date
+        shopDevice: { type: mongoose.Schema.Types.ObjectId, ref: "ShopDevice", default: null },
       },
     ],
   },

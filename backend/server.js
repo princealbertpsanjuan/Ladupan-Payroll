@@ -1,5 +1,6 @@
 const express = require("express");
 const mongoose = require("mongoose");
+const { runStartupTasks } = require("./utils/startupTasks");
 const cors = require("cors");
 require("dotenv").config();
 
@@ -72,6 +73,8 @@ app.use("/api/cash-advances", cashAdvanceRoutes);
 app.use("/api/audit-logs", auditLogRoutes);
 app.use("/api/settings", settingsRoutes);
 app.use("/api/notifications", notificationRoutes);
+app.use("/api/schedule", require("./routes/scheduleRoutes"));
+app.use("/api/shop-device", require("./routes/shopDeviceRoutes"));
 
 
 
@@ -82,7 +85,14 @@ app.get("/", (req, res) => {
 // MongoDB Connection
 mongoose
   .connect(process.env.MONGO_URI)
-  .then(() => console.log("MongoDB Connected"))
+  .then(async () => {
+    console.log("MongoDB Connected");
+    await runStartupTasks();
+
+    // Alert the admins when a shop device stops checking in
+    const { checkOfflineDevices } = require("./controllers/shopDeviceController");
+    setInterval(checkOfflineDevices, 5 * 60 * 1000);
+  })
   .catch((err) => console.log(err));
 
 const PORT = process.env.PORT || 5000;

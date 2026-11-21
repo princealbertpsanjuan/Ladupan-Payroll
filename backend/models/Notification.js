@@ -43,6 +43,12 @@ const notificationSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    // Extra data for grouping (e.g. rest-day changes for one month)
+    meta: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
   },
   { timestamps: true }
 );

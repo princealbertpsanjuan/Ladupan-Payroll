@@ -25,4 +25,9 @@ router.put("/time-requests", protect, adminOnly, setTimeRequests);
 router.post("/network/allowed", protect, adminOnly, addNetwork);
 router.delete("/network/allowed/:id", protect, adminOnly, removeNetwork);
 
+// Shop devices (keep each branch's address up to date)
+const { createPairing, removeDevice } = require("../controllers/shopDeviceController");
+router.post("/shop-devices", protect, adminOnly, createPairing);
+router.delete("/shop-devices/:id", protect, adminOnly, removeDevice);
+
 module.exports = router;

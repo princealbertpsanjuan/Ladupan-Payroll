@@ -396,7 +396,7 @@ const Payroll = () => {
           {preview.overtimeRecords?.length > 0 && (
             <div className="lp-alert info">
               <strong>{preview.overtimeRecords.length} shift(s) have overtime you haven't reviewed.</strong>{" "}
-              They're paid only up to the scheduled end for now:
+              They're paid only up to the 14-hour limit for now:
               <ul>
                 {preview.overtimeRecords.map((record) => (
                   <li key={record._id}>
@@ -459,7 +459,17 @@ const Payroll = () => {
                       </td>
                       <td>{row.totalPresent}</td>
                       <td>{row.totalLate}</td>
-                      <td>{row.totalAbsent}</td>
+                      <td>
+                        {row.totalAbsent}
+                        {row.noShowDays > 0 && (
+                          <div
+                            className="lp-muted lp-nowrap"
+                            title={`No time in: ${row.noShowDates.join(", ")}`}
+                          >
+                            {row.noShowDays} no time in
+                          </div>
+                        )}
+                      </td>
                       <td className="lp-nowrap">{formatMinutes(row.totalLateMinutes)}</td>
                       <td>{row.totalHours}</td>
                       <td className="lp-nowrap">{formatMoney(row.grossSalary)}</td>

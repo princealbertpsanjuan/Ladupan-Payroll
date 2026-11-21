@@ -43,7 +43,6 @@ exports.createEmployee = async (req, res) => {
       password,
       hourlyRate,
       requiredTimeIn,
-      shiftHours,
     } = req.body;
 
     if (!firstName || !lastName || !email || !password) {
@@ -74,14 +73,6 @@ exports.createEmployee = async (req, res) => {
       });
     }
 
-    const hours = shiftHours === undefined || shiftHours === "" ? 12 : Number(shiftHours);
-
-    if (!Number.isFinite(hours) || hours < 1 || hours > 16) {
-      return res.status(400).json({
-        message: "Shift hours must be between 1 and 16",
-      });
-    }
-
     const existingEmployee = await findEmailOwner(email);
 
     if (existingEmployee) {
@@ -102,7 +93,6 @@ exports.createEmployee = async (req, res) => {
       role: "employee",
       hourlyRate: rate,
       requiredTimeIn: timeIn,
-      shiftHours: hours,
     });
 
     await logAudit(req, {
@@ -115,7 +105,6 @@ exports.createEmployee = async (req, res) => {
         email: employee.email,
         hourlyRate: employee.hourlyRate,
         requiredTimeIn: employee.requiredTimeIn,
-        shiftHours: employee.shiftHours,
       },
     });
 
@@ -153,7 +142,6 @@ exports.updateEmployee = async (req, res) => {
       email: employee.email,
       hourlyRate: employee.hourlyRate,
       requiredTimeIn: employee.requiredTimeIn,
-      shiftHours: employee.shiftHours,
       isActive: employee.isActive,
     };
 
@@ -163,7 +151,6 @@ exports.updateEmployee = async (req, res) => {
       email,
       hourlyRate,
       requiredTimeIn,
-      shiftHours,
       isActive,
       newPassword,
     } = req.body;
@@ -210,18 +197,6 @@ exports.updateEmployee = async (req, res) => {
       employee.requiredTimeIn = requiredTimeIn;
     }
 
-    if (shiftHours !== undefined && shiftHours !== "") {
-      const hours = Number(shiftHours);
-
-      if (!Number.isFinite(hours) || hours < 1 || hours > 16) {
-        return res.status(400).json({
-          message: "Shift hours must be between 1 and 16",
-        });
-      }
-
-      employee.shiftHours = hours;
-    }
-
     if (typeof isActive === "boolean") {
       employee.isActive = isActive;
     }
@@ -247,7 +222,6 @@ exports.updateEmployee = async (req, res) => {
       email: employee.email,
       hourlyRate: employee.hourlyRate,
       requiredTimeIn: employee.requiredTimeIn,
-      shiftHours: employee.shiftHours,
       isActive: employee.isActive,
     };
 

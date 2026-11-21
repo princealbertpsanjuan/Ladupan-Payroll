@@ -47,6 +47,17 @@ const payrollReportSchema = new mongoose.Schema(
           default: 0,
         },
 
+        // Scheduled work days with no time-in (included in totalAbsent)
+        noShowDays: {
+          type: Number,
+          default: 0,
+        },
+
+        noShowDates: {
+          type: [String],
+          default: [],
+        },
+
         totalLateMinutes: {
           type: Number,
           default: 0,

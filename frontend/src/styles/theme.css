@@ -2048,3 +2048,54 @@ tbody tr.group-row {
   vertical-align: middle;
   white-space: nowrap;
 }
+
+/* Dashboard: today's absences and rest days */
+.today-schedule h2 {
+  margin-bottom: var(--space-3);
+}
+
+.today-schedule-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: var(--space-4);
+  margin-bottom: var(--space-3);
+}
+
+.today-schedule-grid p {
+  margin-top: 4px;
+  font-weight: 600;
+}
+
+/* Shop Network: pairing a shop device */
+.pair-form {
+  display: flex;
+  gap: var(--space-3);
+  flex-wrap: wrap;
+  margin-top: var(--space-3);
+}
+
+.pair-form input {
+  flex: 1;
+  min-width: 200px;
+  min-height: 40px;
+  padding: 0 12px;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-md);
+  font: 14px var(--font-sans);
+}
+
+.pair-code-box {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-3);
+  margin-top: var(--space-3);
+}
+
+.pair-code {
+  font-size: 34px;
+  font-weight: 800;
+  letter-spacing: 8px;
+  margin: 6px 0;
+  font-variant-numeric: tabular-nums;
+}

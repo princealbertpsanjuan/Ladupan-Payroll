@@ -11,8 +11,8 @@ export const formatMinutes = (minutes = 0) => {
   return h ? `${h}h${m ? ` ${String(m).padStart(2, "0")}m` : ""}` : `${m}m`;
 };
 
-// Admin: shifts that ended 30+ minutes after the scheduled end (stayed late,
-// or came back later to time out). Paid up to the scheduled end until approved.
+// Admin: shifts that ended past required time-in + 14 hours (stayed very late,
+// or came back later to time out). The extra time is paid only when approved.
 const OvertimeCard = () => {
   const [records, setRecords] = useState([]);
   const [loaded, setLoaded] = useState(false);
@@ -55,9 +55,9 @@ const OvertimeCard = () => {
         Overtime to review <span className="lp-count">{records.length}</span>
       </h2>
       <p className="lp-card-subtitle">
-        These employees timed out 30 minutes or more after their shift ended. They stayed late, or
-        came back later to time out. Only the scheduled hours are paid unless you approve the
-        overtime.
+        These employees timed out more than 14 hours after their required time in. They stayed very
+        late, or came back later to time out. Time up to the 14-hour limit is counted; the overtime is
+        paid only if you approve it.
       </p>
 
       <div className="lp-table-wrap">
@@ -67,7 +67,7 @@ const OvertimeCard = () => {
               <th>Employee</th>
               <th>Date</th>
               <th>Time In</th>
-              <th>Shift ends</th>
+              <th>Overtime after</th>
               <th>Time Out</th>
               <th>Overtime</th>
               <th>Action</th>
@@ -83,8 +83,8 @@ const OvertimeCard = () => {
                 <td className="lp-nowrap">{record.date}</td>
                 <td className="lp-nowrap">{record.timeIn}</td>
                 <td className="lp-nowrap">
-                  {record.scheduledEnd}
-                  <div className="lp-muted">{record.scheduledHours} hrs</div>
+                  {record.overtimeStarts}
+                  <div className="lp-muted">Required {record.requiredTimeIn} + 14 hrs</div>
                 </td>
                 <td className="lp-nowrap">
                   <TimeOutValue record={record} />

@@ -6,6 +6,22 @@ const { getBalances, getBalance } = require("../utils/cashAdvanceUtils");
 const { roundMoney } = require("../utils/attendanceRules");
 const { getToday, getYesterday, getCurrentTime } = require("../utils/timeUtils");
 const { timeToMinutes, MAX_SHIFT_MINUTES } = require("../utils/attendanceRules");
+const { buildDayStatus } = require("../utils/absenceUtils");
+
+// Today's schedule: who is absent (no time-in by required time-in + 90 min)
+// and who is on a rest day
+const getTodaySchedule = async (today) => {
+  const employees = await User.find({ role: "employee", isActive: true })
+    .select("employeeId firstName lastName requiredTimeIn createdAt")
+    .sort({ employeeId: 1 });
+  const status = await buildDayStatus({ employees, startDate: today, endDate: today });
+  const pick = (wanted) =>
+    employees
+      .filter((emp) => status[String(emp._id)]?.[today]?.status === wanted)
+      .map((emp) => ({ _id: emp._id, name: `${emp.firstName} ${emp.lastName}`, requiredTimeIn: emp.requiredTimeIn }));
+
+  return { absent: pick("absent"), rest: pick("rest"), notYet: pick("upcoming") };
+};
 
 // Incomplete = timed in, no time-out, and not Absent
 const INCOMPLETE_FILTER = {
@@ -48,6 +64,7 @@ exports.getAdminDashboard = async (req, res) => {
       timedInToday,
       latestPayrolls,
       balances,
+      todaySchedule,
     ] = await Promise.all([
       Attendance.countDocuments({ isArchived: false }),
       User.countDocuments({ role: "employee", isActive: true }),
@@ -63,6 +80,7 @@ exports.getAdminDashboard = async (req, res) => {
         .sort({ createdAt: -1 })
         .limit(5),
       getBalances(),
+      getTodaySchedule(today),
     ]);
 
     const outstandingCashAdvances = roundMoney(
@@ -114,6 +132,7 @@ exports.getAdminDashboard = async (req, res) => {
       incompleteRecords,
       pendingCorrections,
       timedInToday,
+      todaySchedule,
       outstandingCashAdvances,
       latestPayrollTotals,
       recentPayrollActivity,

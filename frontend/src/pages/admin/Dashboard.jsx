@@ -38,6 +38,7 @@ const Dashboard = () => {
     incompleteRecords: 0,
     pendingCorrections: 0,
     timedInToday: 0,
+    todaySchedule: { absent: [], rest: [], notYet: [] },
     outstandingCashAdvances: 0,
     latestPayrollTotals: null,
     latestPayrolls: [],
@@ -220,6 +221,16 @@ const Dashboard = () => {
             </strong>
           </Link>
 
+          <Link
+            to="/admin/schedule"
+            className={`lp-stat ${stats.todaySchedule?.absent?.length > 0 ? "attention" : ""}`}
+          >
+            <span>Absent today (no time in)</span>
+            <strong>
+              <Value loading={loading} value={stats.todaySchedule?.absent?.length || 0} />
+            </strong>
+          </Link>
+
           <Link to="/admin/attendance" className="lp-stat">
             <span>Employees timed in today</span>
             <strong>
@@ -235,6 +246,34 @@ const Dashboard = () => {
           </Link>
         </div>
       </section>
+
+      {!loading &&
+        (stats.todaySchedule?.absent?.length > 0 || stats.todaySchedule?.rest?.length > 0) && (
+          <section className="lp-card today-schedule">
+            <h2>Today</h2>
+            <div className="today-schedule-grid">
+              <div>
+                <span className="lp-muted">Absent (no time in)</span>
+                <p>
+                  {stats.todaySchedule.absent.length
+                    ? stats.todaySchedule.absent.map((emp) => emp.name).join(", ")
+                    : "None"}
+                </p>
+              </div>
+              <div>
+                <span className="lp-muted">Rest day</span>
+                <p>
+                  {stats.todaySchedule.rest.length
+                    ? stats.todaySchedule.rest.map((emp) => emp.name).join(", ")
+                    : "None"}
+                </p>
+              </div>
+            </div>
+            <Link to="/admin/schedule" className="link-btn">
+              Open schedule
+            </Link>
+          </section>
+        )}
 
       <section>
         <h2 className="section-title">Quick Access</h2>

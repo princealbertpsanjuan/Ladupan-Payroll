@@ -181,19 +181,47 @@ notification (at most one per employee every 15 minutes).
   like the proxy's address. Do not set it when there is no proxy, or someone
   could fake the shop's address.
 
-### Shift hours and overtime
+### Overtime (14-hour rule)
 
-Each employee has a **Shift Hours** setting (e.g. 12 or 10) next to their
-required time in. Pay counts from the actual time in and **stops at the
-scheduled end** (required time in + shift hours).
+The same rule for every employee: time from the actual time in is counted
+without approval up to **required time in + 14 hours** (06:00 → 20:00,
+18:00 → 08:00). Pay is still actual time in → actual time out; nothing is paid
+until the employee times out.
 
-- Time after the scheduled end is recorded as overtime but **not paid** until
-  the admin approves it. This also covers someone who forgot to time out and
-  came back later.
-- Overtime of 30 minutes or more notifies the admins and appears in
+- Every minute after that limit is overtime: recorded, **not paid** until the
+  admin approves it. This also covers someone who forgot to time out and came
+  back later.
+- Each overtime case notifies the admins and appears in
   **DTR Corrections → Overtime to review** (Pay Overtime / Don't Pay).
 - Payroll Preview lists unreviewed overtime.
-- Records created before this rule have no cap.
+
+### Schedule (rest days) and automatic Absent
+
+- **Schedule** page: a monthly grid. Tap a day to make it a rest day; quick fill
+  "every Sunday" etc. Every month starts blank (all work days). Changes are
+  allowed any time unless the day is already in a generated payroll; the
+  employee is notified and sees it in **My Schedule**.
+- A **work day** with no time in by **required time in + 90 minutes** counts as
+  **Absent (no time in)**: 0 pay, shown on the Dashboard, the Schedule grid,
+  Payroll and payslips. Adding a record or marking the day as a rest day
+  removes it. Leave counts as Absent (unpaid).
+- Working on a rest day is allowed and paid normally.
+- Absences are counted from the day this feature was deployed.
+
+### Shop devices (automatic shop IP)
+
+Each branch keeps a phone or tablet on the shop Wi-Fi with the Ladupan
+**shop device** screen open. It checks in every minute, so after a power
+interruption changes the shop's internet address, the allowed address
+updates by itself (both IPv4 and IPv6).
+
+1. **Shop Network → Shop devices**: enter the branch name → **Pair a shop
+   device** → a 6-digit code (valid 15 minutes).
+2. On the branch device (Chrome, shop Wi-Fi, mobile data off) open
+   `https://<your-site>/shop-device` and enter the code.
+3. Keep it plugged in with the screen on (Android: Developer options →
+   *Stay awake*). Admins are notified when the address changes and when a
+   device is offline for 15 minutes. **Unpair** removes it and its address.
 
 ### Shop Wi-Fi down: Request Time In / Time Out
 

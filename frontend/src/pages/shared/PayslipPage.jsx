@@ -162,6 +162,22 @@ const PayslipPage = ({ admin = false }) => {
               <span>Absent</span>
               <strong>{summary.totalAbsent} day(s)</strong>
             </div>
+            {summary.noShowDays > 0 && (
+              <div className="payslip-line">
+                <span>Of which no time in</span>
+                <strong>
+                  {summary.noShowDates
+                    .map((date) =>
+                      new Date(`${date}T00:00:00Z`).toLocaleDateString("en-US", {
+                        month: "short",
+                        day: "numeric",
+                        timeZone: "UTC",
+                      })
+                    )
+                    .join(", ")}
+                </strong>
+              </div>
+            )}
             {summary.totalIncomplete > 0 && (
               <div className="payslip-line">
                 <span>No time-out (0 hours)</span>

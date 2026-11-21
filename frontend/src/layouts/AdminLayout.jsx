@@ -4,6 +4,7 @@ const ADMIN_NAV = [
   { to: "/admin/dashboard", label: "Dashboard", icon: "dashboard" },
   { to: "/admin/employees", label: "Employees", icon: "users" },
   { to: "/admin/attendance", label: "Attendance", icon: "clock" },
+  { to: "/admin/schedule", label: "Schedule", icon: "calendar" },
   { to: "/admin/corrections", label: "DTR Corrections", icon: "edit" },
   { to: "/admin/payroll", label: "Payroll", icon: "payroll" },
   { to: "/admin/cash-advances", label: "Cash Advances", icon: "cash" },
